@@ -147,35 +147,35 @@ static inline bool path_StepEmbark(struct tile_data new,
 {
 	bool result = false;
 	
-	if(new.stepped && !currentNode.stepped) {	
-	
+	if(new.stepped && !currentNode.stepped) 
+	{		
 		bool stepSide = false;
 		
-		if(floorFlag == -1) {			
+		if(floorFlag == -1) 
+		{		
+			stepSide = new.stepData.minElev == 3;				
+		} 
+		else if(floorFlag == 1) 
+		{			
+			stepSide = new.stepData.minElev == 3;			
+		} 
+		else if (floorFlag == 0) 
+		{			
+			stepSide = new.stepData.minElev == 0;				
+		} 
+		else INVALID_PATH;
 		
-			stepSide = new.stepData.minElev == 3;	
-			
-		} else if(floorFlag == 1) {		
-		
-			stepSide = new.stepData.minElev == 3;		
-			
-		} else if (floorFlag == 0) {
-			
-			stepSide = new.stepData.minElev == 0;	
-			
-		} else INVALID_PATH;
-		
-		result = (path_StepCheck(currentNode.stepData, dir) && stepSide);	
-		
-	} else if(currentNode.stepped && new.stepped) {
-		
+		result = (path_StepCheck(currentNode.stepData, dir) && stepSide);		
+	} 
+	else if(currentNode.stepped && new.stepped) 
+	{		
 		result = (path_StepCheck(new.stepData, dir) && 
 			  path_StepCheck(currentNode.stepData, dir));
 			  
-	} else if(currentNode.stepped && !new.stepped) {
-		
-		result = path_StepCheck(currentNode.stepData, dir);	
-		
+	} 
+	else if(currentNode.stepped && !new.stepped) 
+	{		
+		result = path_StepCheck(currentNode.stepData, dir);		
 	} 	
 	return(result);
 }
