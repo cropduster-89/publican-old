@@ -22,6 +22,11 @@ enum direction {
 	DIR_NORTHWEST, 
 };
 
+enum list_status {
+	LIST_OPEN = 0,
+	LIST_CLOSED = 8,
+};
+
 struct path_node {
 	int32_t gValue;
 	int32_t hValue;
@@ -32,8 +37,7 @@ struct path_node {
 	struct point3 parentPos;	
 	uint32_t parentG;
 		
-	int8_t onOpenList;
-	int8_t onClosedList;
+	uint16_t listStatus;
 		
 	struct path_node *next;
 	struct path_node *prev;	

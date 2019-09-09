@@ -4,16 +4,6 @@
 		Win32 Platform layer Header
 *************************************************************************************************/
 
-
-struct win32_graphics_buffer {
-	BITMAPINFO info;
-	void *data;
-	int32_t x;
-	int32_t y;
-	int32_t pitch;
-	int32_t stride;
-};
-
 struct win32_file_handle {
 	HANDLE win32Handle;
 };

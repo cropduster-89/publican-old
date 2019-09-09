@@ -12,6 +12,36 @@ __________     ___.   .__  .__
 			@and remove the assertion
 *************************************************************************************/
 
+static inline bool IsOnOpenList(struct path_node *node)
+{
+	return(BITCHECK(node->listStatus, LIST_OPEN));
+}
+
+static inline bool IsOnClosedList(struct path_node *node)
+{
+	return(BITCHECK(node->listStatus, LIST_CLOSED));
+}
+
+static inline void SetOpenList(struct path_node *node)
+{
+	BITSET(node->listStatus, LIST_OPEN);
+}
+
+static inline void SetClosedList(struct path_node *node)
+{
+	BITSET(node->listStatus, LIST_CLOSED);
+}
+
+static inline void ClearOpenList(struct path_node *node)
+{
+	BITCLEAR(node->listStatus, LIST_OPEN);
+}
+
+static inline void ClearClosedList(struct path_node *node)
+{
+	BITCLEAR(node->listStatus, LIST_CLOSED);
+}
+
 /*
 *		Get the lowest f for a* calculation
 */
@@ -22,9 +52,8 @@ static struct path_node *path_GetLowestF(struct path_node *node)
 	while(node != NULL) 
 	{		
 		if(node->fValue < result->fValue &&
-		   node->fValue != 0 && node->onOpenList) 
-		{
-			   
+		   node->fValue != 0 && IsOnOpenList(node)) 
+		{			   
 			result = node;						
 		}				
 		node = node->next;
@@ -56,8 +85,8 @@ static enum direction path_GetCard(struct node_list *destNode,
 	return(result);	
 }
 /*
-*		Gets the cardinal direction coords
-*		for a given direction
+*		Gets the coords	for a given direction
+*		from the input pos
 */
 static struct point3 path_GetDir(int32_t dir, 
 				 struct point3 pos,
@@ -82,7 +111,7 @@ static struct point3 path_GetDir(int32_t dir,
 *		Calculates whether a stepped tile is rotated the		
 *		correct dirction for the direction specified
 */
-static bool path_StepCheck(struct step_data step,
+static bool StepCheck(struct step_data step,
 			   enum direction dir)
 {
 	bool result = false;	
@@ -109,28 +138,39 @@ static inline bool path_StepLeave(struct tile_data new,
 				  enum direction dir)
 {
 	bool result = false;
-	if(new.elevation > currentNode.elevation) {
-		if(!currentNode.stepped) {
-			result = false;
-		} else {
-			if(path_StepCheck(currentNode.stepData, dir)) {
+	if(new.elevation > currentNode.elevation) 
+	{
+		if(!currentNode.stepped) {result = false;} 
+		else 
+		{
+			if(StepCheck(currentNode.stepData, dir)) 
+			{
 				result = true;
 			}
 		}		
-	} else if(new.elevation < currentNode.elevation) {
-		if(!new.stepped) {
-			result = false;
-		} else {
-			if(path_StepCheck(new.stepData, dir)) {
+	} 
+	else if(new.elevation < currentNode.elevation) 
+	{
+		if(!new.stepped) {result = false;} 
+		else 
+		{
+			if(StepCheck(new.stepData, dir)) 
+			{
 				result = true;
 			}
 		}	
-	} else if(new.stepped && currentNode.stepped) {
-		if(path_StepCheck(new.stepData, dir)) {
+	} 
+	else if(new.stepped && currentNode.stepped) 
+	{
+		if(StepCheck(new.stepData, dir)) 
+		{
 			result = true;
 		}
-	} else if(!new.stepped && currentNode.stepped) {
-		if(path_StepCheck(currentNode.stepData, dir)) {
+	} 
+	else if(!new.stepped && currentNode.stepped) 
+	{
+		if(StepCheck(currentNode.stepData, dir)) 
+		{
 			result = true;
 		}
 	}	
@@ -165,17 +205,17 @@ static inline bool path_StepEmbark(struct tile_data new,
 		} 
 		else INVALID_PATH;
 		
-		result = (path_StepCheck(currentNode.stepData, dir) && stepSide);		
+		result = (StepCheck(currentNode.stepData, dir) && stepSide);		
 	} 
 	else if(currentNode.stepped && new.stepped) 
 	{		
-		result = (path_StepCheck(new.stepData, dir) && 
-			  path_StepCheck(currentNode.stepData, dir));
+		result = (StepCheck(new.stepData, dir) && 
+			  StepCheck(currentNode.stepData, dir));
 			  
 	} 
 	else if(currentNode.stepped && !new.stepped) 
 	{		
-		result = path_StepCheck(currentNode.stepData, dir);		
+		result = StepCheck(currentNode.stepData, dir);		
 	} 	
 	return(result);
 }
@@ -527,7 +567,7 @@ extern struct node_list *path_GetPath(struct point3 startPoint,
 	struct path_node *endNode = &pathGrid[endPoint.x][endPoint.y][endPoint.z];
 	struct path_node *currentNode = startNode;
 	
-	currentNode->onOpenList = 1;
+	SetOpenList(currentNode);
 	currentNode->gValue = 0;
 	currentNode->fValue = INT_MAX;
 	currentNode->parentPos.x = INT_MAX;
@@ -553,12 +593,12 @@ extern struct node_list *path_GetPath(struct point3 startPoint,
 			if(!TileIsPassable(dir, map, currentNode->pos, floorFlag)) {continue;}					
 						
 			testNode = &pathGrid[testCoords.x][testCoords.y][testCoords.z];
-			if(testNode->onClosedList) {continue;}
+			if(IsOnClosedList(testNode)) {continue;}
 			
 			if(!path_IsDuplicate(testCoords, dupGrid)) 
 			{
-				openList->next = testNode;
-				testNode->onOpenList = 1;
+				SetOpenList(testNode);
+				openList->next = testNode;				
 				testNode->prev = openList;
 				testNode->next = NULL;
 				openList = openList->next;
@@ -577,8 +617,8 @@ extern struct node_list *path_GetPath(struct point3 startPoint,
 			}				
 		}			
 		if(currentNode->next == NULL) {return(NULL);}
-		currentNode->onOpenList = 0;
-		currentNode->onClosedList = 1;		
+		ClearOpenList(currentNode);
+		SetClosedList(currentNode);	
 		currentNode = path_GetLowestF(startNode);						
 	}
 	/*

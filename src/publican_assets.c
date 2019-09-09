@@ -22,7 +22,7 @@ extern inline void BeginAssetLock(struct game_assets *assets)
 
 extern inline void EndAssetLock(struct game_assets *assets)
 {
-	_WriteBarrier();
+	asm ("sfence");
 	assets->tState->opLock = 0;
 }
 
@@ -67,7 +67,7 @@ extern struct task_with_memory *BeginTaskWithMemory(struct temp_state *tState,
 extern inline void EndTaskWithMemory(struct task_with_memory *task)
 {
 	EndTempMem(task->memFlush);
-	_WriteBarrier();
+	asm ("sfence");
 	task->inUse = false;		
 }
 
@@ -119,7 +119,7 @@ static void LoadAssetWorkDirectly(struct load_asset_work *work)
 		}
 		}
 	}
-	_WriteBarrier();
+	asm ("sfence");
 	
 	if(!PlatformNoFileErrors(work->handle)) {
 		ZeroSize_(work->size, work->dest);
@@ -472,9 +472,8 @@ extern inline struct asset_memory_header *GetAsset(struct game_assets *assets,
 	if(asset->state == state_loaded) {
 			result = asset->header;
 			RemoveAssetHeaderFromList(result);
-			InsertAssetHeaderAtFront(assets, result);
-			
-			_WriteBarrier();
+			InsertAssetHeaderAtFront(assets, result);			
+			asm ("sfence");
 	}
 	EndAssetLock(assets);
 	

@@ -11,6 +11,9 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 #pragma GCC diagnostic ignored "-Wcomment"
 #pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
 
+#define WINVER 0x0600
+#define _WIN32_WINNT 0x0600
+
 #include <windows.h>
 #include <gl/gl.h>
 
@@ -25,8 +28,8 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 #include <limits.h>
 #include <sys/time.h>
 
-#define WIN_X 1920
-#define WIN_Y 1080
+#define WIN_X 1400
+#define WIN_Y 900
 
 typedef char GLchar;
 typedef int64_t GLsizeiptr;
@@ -190,7 +193,6 @@ static bool OpenGLSupportsSRGBFramebuffer = false;
 static GLuint OpenGLDefaultInternalTextureFormat;
 static GLuint OpenGLReservedBlitTexture;
 
-static struct win32_graphics_buffer globalBuffer; 
 static int32_t boolRunning;
 static int64_t globalPerfCount;
 
@@ -427,7 +429,7 @@ static void win32_SetPixelFormat(HDC dc)
 			printf("SRGB Framebuffer Unsupported\n");
 		}
 		wglChoosePixelFormatARB(dc, intAttribList, 0, 1, 
-				&suggestedFormatIndex, &extendedPick);
+			&suggestedFormatIndex, &extendedPick);
 	}
 	if(!extendedPick) {
 		PIXELFORMATDESCRIPTOR desiredFormat = {};
@@ -576,18 +578,7 @@ static POINT win32_GetWindowDim(HWND window)
 	
 	return(result);
 }
-/*
-*		Populate a graphics buffer struct, and the BITMAPINFO
-*		type required for a DIB. 
-*/
-static void win32_InitDIB(struct win32_graphics_buffer *buffer,
-						  int32_t x, int32_t y) 
-{
-	buffer->x = x;
-	buffer->y = y;
-	buffer->stride = BYTES_PER_PIXEL;			
-	buffer->pitch = buffer->x * buffer->stride;							
-}
+
 /*
 *		Blt DIB to screen.
 */
@@ -632,8 +623,8 @@ LRESULT CALLBACK WindowProc(HWND window,
 		int32_t widthAdd = ((winRect.right - winRect.left) - clientWidth);
 		int32_t heightAdd = ((winRect.bottom - winRect.top) - clientHeight);
 		
-		int32_t renderWidth = globalBuffer.x;
-		int32_t renderHeight = globalBuffer.y;
+		int32_t renderWidth = clientWidth;
+		int32_t renderHeight =clientHeight;
 		
 		//int32_t sugX = newPos->cx;
 		//int32_t sugY = newPos->cy;
@@ -799,7 +790,7 @@ static void win32_AddEntry(struct platform_work_queue *queue,
 	entry->callback = callback;
 	entry->data = data;
 	++queue->completionGoal;
-	_WriteBarrier();		
+	asm ("sfence");
 	queue->nextToWrite = newNextEntryToWrite;
 	ReleaseSemaphore(queue->semaphoreHandle, 1, 0);
 }
@@ -816,7 +807,7 @@ static bool win32_DoNextQueueEntry(struct platform_work_queue *queue)
 		if(index == originalNextToRead) {
 			struct platform_work_queue_entry entry = queue->entries[index];
 			entry.callback(queue, entry.data);
-					InterlockedIncrement((LONG volatile *)&queue->completionCount);
+				InterlockedIncrement((LONG volatile *)&queue->completionCount);
 		}											
 	} else {
 		needSleep = true;
@@ -834,7 +825,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 	assert(testThreadID == GetCurrentThreadId());		
 	for(;;) {
 		if(win32_DoNextQueueEntry(queue)) {
-				WaitForSingleObjectEx(queue->semaphoreHandle, INFINITE, FALSE);
+			WaitForSingleObjectEx(queue->semaphoreHandle, INFINITE, FALSE);
 		}
 	}
 }
@@ -871,13 +862,24 @@ static void win32_MakeQueue(struct platform_work_queue *queue,
 	}												 
 }
 
+static void UpdateCursor(HWND window,
+			 POINT dim,
+			 struct pub_input *input)
+{
+	POINT mousePos;
+	GetCursorPos(&mousePos);
+	ScreenToClient(window, &mousePos);
+	input->mouseX = (float)mousePos.x;
+	input->mouseY = (float)((dim.y - 1) - mousePos.y);	
+}
+
 /*
 *		Entry point for Windows. 
 */
 int CALLBACK WinMain(HINSTANCE hInstance, 
-				     HINSTANCE hPrevInstance, 
-					 LPSTR lpCmdLine, 
-					 int nCmdShow)
+		     HINSTANCE hPrevInstance, 
+		     LPSTR lpCmdLine, 
+		     int nCmdShow)
 {
 	struct win32_state *winState = &globalWin32State;
 	winState->memSentinal.prev = &winState->memSentinal;
@@ -888,9 +890,7 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	globalPerfCount = perfCountFreq.QuadPart;
 	
 	UINT desiredMS = 1;
-	bool granSleep = (timeBeginPeriod(desiredMS) == TIMERR_NOERROR);
-	
-	win32_InitDIB(&globalBuffer, WIN_X, WIN_Y);
+	bool granSleep = (timeBeginPeriod(desiredMS) == TIMERR_NOERROR);	
 	
 	WNDCLASSEX winClass = {};		
 	winClass.cbSize = sizeof(WNDCLASSEX);
@@ -898,17 +898,18 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	winClass.lpfnWndProc = WindowProc;
 	winClass.hInstance = hInstance;
 	winClass.hCursor = LoadCursor(0, IDC_ARROW);
-	//winClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	winClass.lpszClassName = "Pub";
 	
 	if(!RegisterClassEx(&winClass)) {
-			MessageBox(NULL, TEXT("Register Windowclass failed.\n"), NULL, MB_ICONERROR);
-			return(1);
+#ifdef DEBUG		
+		printf("RegisterClassEx failed.\n");
+#endif			
+		return(1);
 	}	
-	HWND window = CreateWindowEx(0, "Pub", "Publican",	WS_VISIBLE|WS_POPUP
-								, CW_USEDEFAULT,
-								 CW_USEDEFAULT,	WIN_X, WIN_Y,	
-								 NULL, NULL, hInstance, NULL);
+	HWND window = CreateWindowEx(0, "Pub", "Publican",	
+		WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+		CW_USEDEFAULT,	WIN_X, WIN_Y,	
+		NULL, NULL, hInstance, NULL);
 	if(!window) {
 			MessageBox(NULL, TEXT("Window creation failed.\n"), NULL, MB_ICONERROR);
 			return(1);
@@ -968,26 +969,22 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	ShowCursor(FALSE);
 	
 	boolRunning = 1;
-	printf("Platform Init Complete\n");
 	while(boolRunning) {				
 		
+		POINT dim = win32_GetWindowDim(window);
 		struct render_commands commands = {};
-		commands.w = globalBuffer.x;
-		commands.h = globalBuffer.y;
+		commands.w = dim.x;
+		commands.h = dim.y;
 		commands.maxRenderTargetIndex = 1;
 		commands.entryCount = 0;
 		commands.maxPushSize = pushBufferSize;
 		commands.pushBase = pushBase;
 		commands.pushData = pushBase;
-		POINT dim = win32_GetWindowDim(window);
+		
 		struct rect_int drawRegion = IntToRect(0, 0, dim.x, dim.y);
-		//render_AspectFit(commands.w, commands.h, dim.x, dim.y);				
-					
-		POINT mousePos;
-		GetCursorPos(&mousePos);
-		ScreenToClient(window, &mousePos);
-		input->mouseX = (float)mousePos.x;
-		input->mouseY = (float)((dim.y - 1) - mousePos.y);						
+		render_AspectFit(commands.w, commands.h, dim.x, dim.y);									
+		
+		UpdateCursor(window, dim, input);
 		
 		win32_ProcessMessage(input);		
 		
@@ -1029,7 +1026,7 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 		HDC dc = GetDC(window);
 		struct memory_arena frameArena = {};
 		win32_OutputBuffer(&commands, dc, drawRegion, 
-				 globalBuffer.x, globalBuffer.y, &frameArena);
+				 dim.x, dim.y, &frameArena);
 		ReleaseDC(window, dc);
 		
 		

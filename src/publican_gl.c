@@ -427,8 +427,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 	assert(!gl_GetError());	
 	glEnableVertexAttribArray(1);	
 	assert(!gl_GetError());
-	
-	
+		
 	glGenTextures(1, &glRuntime.texArray);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, glRuntime.texArray);
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 256, 256, 256);
