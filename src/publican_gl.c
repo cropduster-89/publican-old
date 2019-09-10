@@ -435,9 +435,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 	
 	printf("%s\n", glGetString(GL_VERSION));
 	 	
-	return(info);
-	
-	
+	return(info);	
 }
 
 extern inline float SafeRatioN(float num, float div, float n)

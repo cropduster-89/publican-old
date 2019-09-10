@@ -337,7 +337,7 @@ extern void ui_WorldMode(struct world_mode *world,
 		ui_InitWorldUI(world);
 	}	
 	world->ui.cursorPos = Unproject(group, RealToVec2(input->mouseX, 
-		input->mouseY), -1.0f, true).xy;	
+		input->mouseY), 0).xy;	
 	
 	for(int32_t i = 0; i < panel_count; ++i) {
 		if(PANELVIS(i) || DEF_VIS_P(i)) {			
@@ -385,7 +385,7 @@ extern void ui_WorldMode(struct world_mode *world,
 	struct object_transform mouseTrans = {};
 	union vec2 mouseP = {
 		.x = input->mouseX - (WIN_X / 2),
-		.y = input->mouseY - (WIN_Y / 2) - 32,
+		.y = input->mouseY - (WIN_Y / 2),
 	};
 	mouseTrans.offset.xy = mouseP;
 	render_PushBMP(group, mouseTrans, 

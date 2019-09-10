@@ -27,6 +27,12 @@ enum list_status {
 	LIST_CLOSED = 8,
 };
 
+enum floor_flag {
+	FLOOR_DESCEND = -1,
+	FLOOR_REMAIN = 0,
+	FLOOR_ASCEND = 1	
+};
+
 struct path_node {
 	int32_t gValue;
 	int32_t hValue;

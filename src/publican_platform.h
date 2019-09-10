@@ -83,9 +83,9 @@ struct pub_input {
 }; 
 
 enum platform_memory_block_flags {
-	Platformdir_northotRestored = 0x1,
-	Platform_OF = 0x2,
-	Platform_UF = 0x4
+	PLATFORM_NOTRESTORED = 0x1,
+	PLATFORM_OVERFLOW = 0x2,
+	PLATFORM_UNDERFLOW = 0x4
 };
 
 struct platform_file_handle {

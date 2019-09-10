@@ -1,7 +1,7 @@
 #pragma once
 
 enum entity_type {
-	typedir_northull,
+	ETYPE_NULL,
 	type_char,
 	type_struc,
 	type_furn		

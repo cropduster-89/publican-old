@@ -96,7 +96,7 @@ extern inline void *PushSize_(struct memory_arena 	*arena,
 	if(!arena->currentBlock || (arena->currentBlock->used + size) 
 		> arena->currentBlock->size) {
 		size = sizeInit;
-		if(arena->allocationFlags & (Platform_OF | Platform_UF)) {
+		if(arena->allocationFlags & (PLATFORM_OVERFLOW | PLATFORM_UNDERFLOW)) {
 			arena->minBlockSize = 0;
 			size = AlignPow2(size, params.align);
 		} else if(!arena->minBlockSize) {
@@ -178,7 +178,7 @@ extern inline void CheckArena(struct memory_arena *arena)
 extern inline struct arena_boot_params NonRestoredArena(void)
 {
 		struct arena_boot_params params = DEF_BOOT;
-		params.allocationFlags = Platformdir_northotRestored;
+		params.allocationFlags = PLATFORM_NOTRESTORED;
 		return(params);
 }
 

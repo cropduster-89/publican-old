@@ -27,9 +27,6 @@ extern inline int32_t Float2Int(float a)
 
 #define INVALID_PATH (assert(0))
 
-#define _TAU 6.28318530717958647692f
-#define _PI 3.14159265358979323846f
-
 #define KILOBYTES(value) ((value)*1024LL)
 #define MEGABYTES(value) (KILOBYTES(value)*1024LL)
 #define GIGABYTES(value) (MEGABYTES(value)*1024LL)
@@ -47,7 +44,7 @@ extern inline int32_t Float2Int(float a)
 #define _45D 0.7853982
 #define _30D 0.5235988
 
-#define DEG(val) ((val) * (_PI / 180))
+#define DEG(val) ((val) * (PI / 180))
 
 #define _0OFFSET (RealToVec3(0.0f, 0.0f, 0.0f))
 #define _1OFFSET (RealToVec3(1.0f, 0.0f, 0.0f))

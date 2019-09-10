@@ -16,13 +16,11 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 
 #include <windows.h>
 #include <gl/gl.h>
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <errno.h>
-#include <uchar.h>
 #include <math.h>
 #include <assert.h>
 #include <limits.h>
@@ -354,11 +352,11 @@ PLATFORM_ALLOCATE_MEMORY(win32_Alloc)
 	uintptr_t totalSize = size + sizeof(struct win32_memory_block);
 	uintptr_t baseOffset = sizeof(struct win32_memory_block);
 	uintptr_t protectOffset = 0;
-	if(flags & Platform_UF) {
+	if(flags & PLATFORM_UNDERFLOW) {
 		totalSize = size + 2 * pageSize;
 		baseOffset = 2 * pageSize;
 		protectOffset = pageSize;
-	} else if(flags & Platform_OF) {
+	} else if(flags & PLATFORM_OVERFLOW) {
 		uintptr_t sizeRoundUp = AlignPow2(size, pageSize);
 		totalSize = sizeRoundUp + 2 * pageSize;
 		baseOffset = pageSize + sizeRoundUp - size;
@@ -371,7 +369,7 @@ PLATFORM_ALLOCATE_MEMORY(win32_Alloc)
 	block->block.base = (uint8_t *)block + baseOffset; 
 	assert(block->block.used == 0);
 	assert(block->block.arenaPrev == 0);
-	if(flags & (Platform_UF|Platform_OF)) {
+	if(flags & (PLATFORM_UNDERFLOW|PLATFORM_OVERFLOW)) {
 		DWORD oldProtect = 0;
 		BOOL boolProtect = VirtualProtect((uint8_t *)block + protectOffset,
 				pageSize, PAGE_NOACCESS, &oldProtect);
@@ -431,7 +429,8 @@ static void win32_SetPixelFormat(HDC dc)
 		wglChoosePixelFormatARB(dc, intAttribList, 0, 1, 
 			&suggestedFormatIndex, &extendedPick);
 	}
-	if(!extendedPick) {
+	if(!extendedPick) 
+	{
 		PIXELFORMATDESCRIPTOR desiredFormat = {};
 		desiredFormat.nSize = sizeof(desiredFormat);
 		desiredFormat.nVersion = 1;
@@ -477,8 +476,7 @@ static void win32_LoadWGLExtensions(void)
 					while(*end && !IsWhitespace(*end)) {++end;}
 					uintptr_t count = end - at;
 					
-					if(0) {
-					} else if(StringsAreEqual(count, at, "WGL_EXT_framebuffer_sRGB")) {
+					if(StringsAreEqual(count, at, "WGL_EXT_framebuffer_sRGB")) {
 							OpenGLSupportsSRGBFramebuffer = true;
 							
 					} else if(StringsAreEqual(count, at, "WGL_ARB_framebuffer_sRGB")) {
@@ -580,7 +578,7 @@ static POINT win32_GetWindowDim(HWND window)
 }
 
 /*
-*		Blt DIB to screen.
+*		Call the renderer
 */
 static void win32_OutputBuffer(struct render_commands *commands, 
 			   HDC dc,
@@ -598,9 +596,9 @@ static void win32_OutputBuffer(struct render_commands *commands,
 *		by win32_ProcessMessage.
 */
 LRESULT CALLBACK WindowProc(HWND window, 
-			UINT message, 
-							WPARAM wParam, 
-							LPARAM lParam)
+			    UINT message, 
+			    WPARAM wParam, 
+			    LPARAM lParam)
 {
 	LRESULT result = 0;
 	
@@ -624,7 +622,7 @@ LRESULT CALLBACK WindowProc(HWND window,
 		int32_t heightAdd = ((winRect.bottom - winRect.top) - clientHeight);
 		
 		int32_t renderWidth = clientWidth;
-		int32_t renderHeight =clientHeight;
+		int32_t renderHeight = clientHeight;
 		
 		//int32_t sugX = newPos->cx;
 		//int32_t sugY = newPos->cy;
@@ -634,9 +632,9 @@ LRESULT CALLBACK WindowProc(HWND window,
 		
 		if(fabsf((float)(newPos->cx - newCx)) < 
 		   fabsf((float)(newPos->cy - newCy))) {
-				newPos->cx = newCx + widthAdd;
+			newPos->cx = newCx + widthAdd;
 		} else {
-				newPos->cy = newCy + heightAdd;
+			newPos->cy = newCy + heightAdd;
 		}
 		result = DefWindowProc(window, message, wParam, lParam);
 		break;
@@ -665,7 +663,8 @@ static void win32_ProcessMessage(struct pub_input *input)
 	for(;;) {
 		BOOL gotMessage = FALSE;
 		gotMessage = PeekMessage(&message, 0, 0, WM_PAINT - 1, PM_REMOVE);
-		if(!gotMessage) {
+		if(!gotMessage) 
+		{
 			gotMessage = PeekMessage(&message, 0, WM_PAINT + 1, WM_MOUSEMOVE - 1, PM_REMOVE);
 			if(!gotMessage) {
 				gotMessage = PeekMessage(&message, 0, WM_MOUSEMOVE + 1, 0xFFFFFFFF, PM_REMOVE);
@@ -676,8 +675,7 @@ static void win32_ProcessMessage(struct pub_input *input)
 		}		
 		switch(message.message) {
 		case WM_QUIT: {	
-			boolRunning = 0;
-			printf("EXIT1\n");
+			boolRunning = 0;			
 			break;
 		}
 		case WM_SYSKEYDOWN:
@@ -754,31 +752,26 @@ static void win32_ProcessMessage(struct pub_input *input)
 			}
 			break;
 		} case WM_LBUTTONDOWN: {		
-				input->buttons.lClick.isDown = true;
-				break;						
+			input->buttons.lClick.isDown = true;
+			break;						
 		} case WM_LBUTTONUP: {		
-				input->buttons.lClick.endedDown = true;
-				input->buttons.lClick.isDown = false;						
-				break;						
+			input->buttons.lClick.endedDown = true;
+			input->buttons.lClick.isDown = false;						
+			break;						
 		} case WM_RBUTTONUP: {
-				input->buttons.rClick.endedDown = 1;
-				break;
+			input->buttons.rClick.endedDown = 1;
+			break;
 		} case WM_MOUSEWHEEL: {						
-				input->mouseZ += GET_WHEEL_DELTA_WPARAM(message.wParam) / 40.0f;
-				break;
+			input->mouseZ += GET_WHEEL_DELTA_WPARAM(message.wParam) / 40.0f;
+			break;
 		} default: {
-				TranslateMessage(&message);
-				DispatchMessage(&message);
-				break;
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+			break;
 		}
 		}
 	}			
 }
-
-struct win32_thread {
-	int32_t logicalIndex;
-	struct platform_work_queue *queue;
-};
 
 static void win32_AddEntry(struct platform_work_queue *queue,
 			   platform_work_queue_callback *callback,
@@ -801,17 +794,19 @@ static bool win32_DoNextQueueEntry(struct platform_work_queue *queue)
 	
 	uint32_t originalNextToRead = queue->nextToRead;
 	uint32_t newNextToRead = (originalNextToRead + 1) % ARRAY_COUNT(queue->entries);
-	if(originalNextToRead != queue->nextToWrite) {
+	if(originalNextToRead != queue->nextToWrite) 
+	{
 		uint32_t index = InterlockedCompareExchange((LONG volatile *)&queue->nextToRead,
 														newNextToRead, originalNextToRead);
-		if(index == originalNextToRead) {
+		if(index == originalNextToRead) 
+		{
 			struct platform_work_queue_entry entry = queue->entries[index];
 			entry.callback(queue, entry.data);
-				InterlockedIncrement((LONG volatile *)&queue->completionCount);
+			InterlockedIncrement((LONG volatile *)&queue->completionCount);
 		}											
-	} else {
-		needSleep = true;
-	}
+	} 
+	else {needSleep = true;}
+	
 	return(needSleep);
 }
 
@@ -823,8 +818,10 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 
 	uint32_t testThreadID = GetThreadID();
 	assert(testThreadID == GetCurrentThreadId());		
-	for(;;) {
-		if(win32_DoNextQueueEntry(queue)) {
+	for(;;) 
+	{
+		if(win32_DoNextQueueEntry(queue)) 
+		{
 			WaitForSingleObjectEx(queue->semaphoreHandle, INFINITE, FALSE);
 		}
 	}
@@ -832,7 +829,8 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 
 static void win32_CompleteAllWork(struct platform_work_queue *queue)
 {
-	while(queue->completionGoal != queue->completionCount) {
+	while(queue->completionGoal != queue->completionCount) 
+	{
 		win32_DoNextQueueEntry(queue);
 	}
 	queue->completionGoal = 0;
@@ -849,17 +847,39 @@ static void win32_MakeQueue(struct platform_work_queue *queue,
 	queue->nextToRead = 0;
 	
 	uint32_t initialCount = 0;
-	queue->semaphoreHandle = CreateSemaphore(0, initialCount, threadCount, 0);
+	queue->semaphoreHandle = CreateSemaphore(0, initialCount, 
+		threadCount, 0);
 	
-	for(uint32_t i = 0; i < threadCount; ++i) {				
+	for(uint32_t i = 0; i < threadCount; ++i) 
+	{				
 		struct win32_thread_startup *startup = startups + i;
 		startup->queue = queue;
 		
 		DWORD threadID;
 		HANDLE threadHandle = CreateThread(0, 0, ThreadProc,
-						   startups, 0, &threadID);
+			startups, 0, &threadID);
 		CloseHandle(threadHandle);								   
 	}												 
+}
+
+static void LimitFps(uint64_t lastTimeStamp)
+{
+#define TARGET_FPS 60
+#define TARGET_SPF (1.0f / TARGET_FPS)	
+	
+	uint64_t workCounter = time_GetTime();
+	uint64_t workSecondsElapsed = (workCounter - lastTimeStamp);				
+	uint64_t secondsElapsedForFrame = workSecondsElapsed;
+	
+	if(secondsElapsedForFrame < TARGET_SPF) 
+	{
+		uint32_t sleepMS = (1000.0f * (TARGET_SPF - secondsElapsedForFrame));
+		if(sleepMS > 0.0f) Sleep(sleepMS);						
+		while(secondsElapsedForFrame < TARGET_SPF) 
+		{
+			secondsElapsedForFrame = (workCounter - time_GetTime());									
+		}
+	}	
 }
 
 static void UpdateCursor(HWND window,
@@ -884,14 +904,7 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	struct win32_state *winState = &globalWin32State;
 	winState->memSentinal.prev = &winState->memSentinal;
 	winState->memSentinal.next = &winState->memSentinal;		
-	
-	LARGE_INTEGER perfCountFreq;
-	QueryPerformanceFrequency(&perfCountFreq);
-	globalPerfCount = perfCountFreq.QuadPart;
-	
-	UINT desiredMS = 1;
-	bool granSleep = (timeBeginPeriod(desiredMS) == TIMERR_NOERROR);	
-	
+			
 	WNDCLASSEX winClass = {};		
 	winClass.cbSize = sizeof(WNDCLASSEX);
 	winClass.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
@@ -900,7 +913,8 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	winClass.hCursor = LoadCursor(0, IDC_ARROW);
 	winClass.lpszClassName = "Pub";
 	
-	if(!RegisterClassEx(&winClass)) {
+	if(!RegisterClassEx(&winClass)) 
+	{
 #ifdef DEBUG		
 		printf("RegisterClassEx failed.\n");
 #endif			
@@ -910,9 +924,10 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 		WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
 		CW_USEDEFAULT,	WIN_X, WIN_Y,	
 		NULL, NULL, hInstance, NULL);
-	if(!window) {
-			MessageBox(NULL, TEXT("Window creation failed.\n"), NULL, MB_ICONERROR);
-			return(1);
+	if(!window) 
+	{
+		MessageBox(NULL, TEXT("Window creation failed.\n"), NULL, MB_ICONERROR);
+		return(1);
 	}		
 		
 	struct win32_thread_startup highPriorityStart[6] = {};
@@ -922,12 +937,8 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	struct win32_thread_startup lowPriorityStart[2] = {};
 	struct platform_work_queue lowPriorityQueue = {};
 	win32_MakeQueue(&lowPriorityQueue, ARRAY_COUNT(lowPriorityStart), lowPriorityStart);
-	
-	printf("Threads loaded\n");
-	
-	float fps = 60;
-	float spf = 1.0f / fps;
-	
+
+		
 	//LPVOID baseAddress = 0;
 	struct pub_memory memory = {};
 	memory.highPriorityQueue = &highPriorityQueue;
@@ -947,19 +958,20 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	struct pub_input _input = {};
 	struct pub_input *input = &_input;
 	
-	LARGE_INTEGER lastCounter = win32_GetWallClock();			
+	uint64_t lastCounter = time_GetTime();		
 	
 	uint64_t pushBufferSize = MEGABYTES(64);	
-	struct platform_memory_block *pushBufferBlock = win32_Alloc(pushBufferSize, Platformdir_northotRestored);
+	struct platform_memory_block *pushBufferBlock = win32_Alloc(pushBufferSize, PLATFORM_NOTRESTORED);
 	uint8_t *pushBase = pushBufferBlock->base;
 	
 	uint32_t textureOpCount = 1024;
 	struct platform_texture_op_queue *textureOpQueue = &memory.textureOpQueue;
 	textureOpQueue->firstFree = (struct texture_op *)VirtualAlloc(0, sizeof(struct texture_op) * textureOpCount,
 																  MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-	for(uint32_t opIndex = 0; opIndex < (textureOpCount - 1); ++opIndex) {
-			struct texture_op *op = textureOpQueue->firstFree + opIndex;
-			op->next = textureOpQueue->firstFree + opIndex + 1;
+	for(uint32_t opIndex = 0; opIndex < (textureOpCount - 1); ++opIndex) 
+	{
+		struct texture_op *op = textureOpQueue->firstFree + opIndex;
+		op->next = textureOpQueue->firstFree + opIndex + 1;
 	}															  
 	
 	platform = memory.platformAPI;
@@ -969,8 +981,8 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	ShowCursor(FALSE);
 	
 	boolRunning = 1;
-	while(boolRunning) {				
-		
+	while(boolRunning) 
+	{		
 		POINT dim = win32_GetWindowDim(window);
 		struct render_commands commands = {};
 		commands.w = dim.x;
@@ -989,33 +1001,18 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 		win32_ProcessMessage(input);		
 		
 		pub_MainLoop(&memory, input, &commands);
-		
-		LARGE_INTEGER workCounter = win32_GetWallClock();
-		float workSecondsElapsed = win32_GetSecondsElapsed(lastCounter, workCounter);				
-		float secondsElapsedForFrame = workSecondsElapsed;
-		
-		if(secondsElapsedForFrame < spf) {
-			DWORD sleepMS = (DWORD)(1000.0f * 
-			(spf - secondsElapsedForFrame));
-			if(granSleep) {
-				if(sleepMS > 0.0f) Sleep(sleepMS);		
-			}						
-			while(secondsElapsedForFrame < spf) {
-				secondsElapsedForFrame = 
-					win32_GetSecondsElapsed(lastCounter, win32_GetWallClock());									
-			}
-		}
-		LARGE_INTEGER endCounter = win32_GetWallClock();
-		lastCounter = endCounter;
-		//flipCounter = win32_GetWallClock();				
-		
+	
+		LimitFps(lastCounter);	
+		lastCounter = time_GetTime();
+
 		BeginTicketMutex(&textureOpQueue->mutex);
 		struct texture_op *firstTextureOp = textureOpQueue->first;
 		struct texture_op *lastTextureOp = textureOpQueue->last;
 		textureOpQueue->last = textureOpQueue->first = 0;
 		EndTicketMutex(&textureOpQueue->mutex);
 		
-		if(firstTextureOp) {
+		if(firstTextureOp) 
+		{
 			assert(lastTextureOp);
 			gl_ManageTextures(firstTextureOp);
 			BeginTicketMutex(&textureOpQueue->mutex);

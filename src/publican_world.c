@@ -10,27 +10,13 @@ __________     ___.   .__  .__
 
 #define TILE_DIM_METRES 1.0f
 
-static void DEBUG_RayFollow(struct world_mode *world,union vec3 ray)
-{
-	union vec3 dir = Normalise(ray);
-	union vec3 start = world->cam.pos;
-	
-	printf("start\n");
-	
-	for(int32_t i = 0; i < 20; ++i) {
-		start = ADDVEC(start, dir);
-		//PrintVec(start);
-	}
-	printf("end\n");
-}
-
 static struct entity *DEBUG_CharSelect(struct world_mode *world)
 {
 	struct entity *result = NULL;
 		
 	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) {
 		
-		if(ent->type == typedir_northull || ent->type == type_struc) {continue;}			
+		if(ent->type == ETYPE_NULL || ent->type == type_struc) {continue;}			
 		
 		for(int32_t i = 4; i >= ent->bound.t.max.z; --i) {
 			if(
@@ -106,43 +92,49 @@ extern inline void world_GetMouseCoords(struct pub_input *input,
 					struct render_group *group,
 					struct world_mode *world)
 {		
-	union vec4 mousePosF = Unproject(
-		group, RealToVec2(input->mouseX, input->mouseY), -5, false);										 
-								 
-	world->mouseRay[0] = mousePosF.xyz;
-	world->mouseRayBase = Normalise(world->mouseRay[0]);
+	union vec4 mousePosF = Unproject(group, 
+		RealToVec2(input->mouseX, input->mouseY), 0);
+	union vec4 mousePosN = Unproject(group, 
+		RealToVec2(input->mouseX, input->mouseY), 2);			
+	union vec4 mouseVector = SUBVEC(mousePosF, mousePosN);	
 	
+	union vec3 testVec = ADDVEC(mouseVector.xyz, RealToVec3(1, 1, -0.815));
 	
+	world->mouseRay[0] = Normalise(mouseVector.xyz);
+	world->mouseCoords[0] = AddVec3(world->mouseRay[0], world->cam.pos);
+	
+	//world->mouseRayBase = Normalise(world->mouseRay[0]);	
 	//DEBUG_RayFollow(world, ADDVEC(world->mouseRayBase, world->cam.pos));
-	//render_PushCube(group, world->mouseRayBase, 0.1f, 0.1f, 0xFF0000FF);	
+	render_PushCube(group, mouseVector.xyz, 0.05f, 0.1f, 0xFF0000FF);	
+	render_PushCube(group, testVec, 0.05f, 0.1f, 0xFFFFFFFF);	
 	
 	
 	
-	float z = 0;	
-	if(world->mouseRay[0].z >= 4) {
-		z = 0;
-	} else if(world->mouseRay[0].z < 0) {
-		z = 0;
-	}
-	
-	float angle1 = -world->cam.pitch;
-	float angle2 = world->cam.orbit;	
-		
-	for(int32_t i = 0; i < ARRAY_COUNT(world->mouseCoords); ++i) {
-		float groundLen = (((world->mouseRay[0].z - (world->currentFloor)) - 
-			(0.4f * i))- z) / sin(angle2) * sin(angle1);
-		
-		
-		union vec3 newPos = {		
-			.x = world->mouseRay[0].x + groundLen,
-			.y = world->mouseRay[0].y + groundLen,
-			.z = (float)i * 0.5,		
-		};	
-		world->mouseRay[i] = newPos;	
-		world->mouseCoords[i] = AddVec3(newPos, world->cam.pos);
-	
-
-	}
+	//float z = 0;	
+	//if(world->mouseRay[0].z >= 4) {
+	//	z = 0;
+	//} else if(world->mouseRay[0].z < 0) {
+	//	z = 0;
+	//}
+	//
+	//float angle1 = -world->cam.pitch;
+	//float angle2 = world->cam.orbit;	
+	//	
+	//for(int32_t i = 0; i < ARRAY_COUNT(world->mouseCoords); ++i) {
+	//	float groundLen = (((world->mouseRay[0].z - (world->currentFloor)) - 
+	//		(0.4f * i))- z) / sin(angle2) * sin(angle1);
+	//	
+	//	
+	//	union vec3 newPos = {		
+	//		.x = world->mouseRay[0].x + groundLen,
+	//		.y = world->mouseRay[0].y + groundLen,
+	//		.z = (float)i * 0.5,		
+	//	};	
+	//	world->mouseRay[i] = newPos;	
+	//	world->mouseCoords[i] = AddVec3(newPos, world->cam.pos);
+	//
+	//
+	//}
 			
 }
 
@@ -385,7 +377,7 @@ static void world_StartWorld(struct game_state *state)
 	map->tiles = PUSH_ARRAY(&state->modeArena, map->sizeX * map->sizeY * map->sizeZ,
 						          struct tile_data, DEF_PUSH);
 	
-	uint32_t index = entity_Add(world, typedir_northull);
+	uint32_t index = entity_Add(world, ETYPE_NULL);
 	for(int32_t z = 0; z < map->sizeZ; ++z) {	
 	for(int32_t y = 0; y < map->sizeY; ++y) {
 	for(int32_t x = 0; x < map->sizeX; ++x) {	
@@ -468,7 +460,6 @@ static void world_StartWorld(struct game_state *state)
 	world->cam.pitch = DegreesToRads(60);
 	world->cam.orbit = DegreesToRads(-45);
 	world->cam.dolly = 0.06;
-	world->cam.debugCam = false;
 	world->currentFloor = 0;
 	world->lastEnt = 0;
 	
@@ -477,6 +468,31 @@ static void world_StartWorld(struct game_state *state)
 	srand(world->timer.baseTime);
 	
 	printf("world init\n");									
+}
+
+/*
+*	Set up camera transforms for both the world and the ui
+*	for the current frame
+*/
+static void InitCamTransforms(struct render_group 	*group, 
+			      struct render_group 	*textGroup, 
+			      struct world_mode 	*world,
+			      struct loaded_bmp 	drawBuffer)
+{
+	struct mat4 cam0 = MultMat4(RotZ(world->cam.orbit), RotX(world->cam.pitch));		
+	union vec3 cam0T = Transform(cam0, AddVec3(world->cam.offset, 
+					 RealToVec3(0, 0, world->cam.dolly)), 1.0f);			
+	render_SetTransform(group, false, true, world->cam.dolly, 
+		GetCol(cam0, 0),
+		GetCol(cam0, 1),
+		GetCol(cam0, 2),
+		cam0T, -100.0f, 100.0f);						
+	
+	render_SetTransform(textGroup, false, true, 1.0f, 
+		RealToVec3(2.0f / drawBuffer.w, 0, 0),
+		RealToVec3(0, 2.0f / drawBuffer.w, 0),
+		RealToVec3(0, 0, 1),							
+		EMPTY_V3, -10000.0f, 10000.0f);	
 }
 
 extern void world_UpdateAndRender(struct game_state 	*state, 
@@ -493,75 +509,21 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 	}		
 	struct world_mode *world = state->worldMode;		
 	
-	
-	if(input->buttons.alt.endedDown && !world->cam.debugCam) {
-		world->cam.debugCam = 1;
-		world->cam.DEBUGorbit = world->cam.orbit;
-		world->cam.DEBUGpitch = world->cam.pitch;
-		world->cam.DEBUGdolly = world->cam.dolly;
-		input->buttons.alt.endedDown = 0;
-		printf("Debug cam ON\n");
-	} else if(input->buttons.alt.endedDown && world->cam.debugCam) {
-		world->cam.debugCam = 0;
-		input->buttons.alt.endedDown = 0;
-		printf("Debug cam OFF\n");
-	}
-	
-	if(input->buttons.ctrl.endedDown && !world->cam.debugCamMove) {
-		world->cam.debugCamMove = 1;
-		input->buttons.ctrl.endedDown = 0;				
-	} else if(input->buttons.ctrl.endedDown && world->cam.debugCamMove) {
-		world->cam.debugCamMove = 0;
-		input->buttons.ctrl.endedDown = 0;				
-	}
-	if(world->cam.debugCamMove) {				
-		float rotSpeed = 0.000001f * _PI;		
-		world->cam.DEBUGorbit += rotSpeed * input->mouseX;
-		world->cam.DEBUGpitch += rotSpeed * input->mouseY;
-		world->cam.DEBUGdolly = world->cam.dolly;				
-	} else {					
-								
-	}
-
-	world->cam.offset.y = world->currentFloor * 4;
-	
-	
-	struct mat4 cam0 = MultMat4(RotZ(world->cam.orbit), RotX(world->cam.pitch));		
-	union vec3 cam0T = Transform(cam0, AddVec3(world->cam.offset, 
-					 RealToVec3(0, 0, world->cam.dolly)), 1.0f);			
-	render_SetTransform(group, world->cam.debugCam, true, world->cam.dolly, 
-		GetCol(cam0, 0),
-		GetCol(cam0, 1),
-		GetCol(cam0, 2),
-		cam0T, -100.0f, 100.0f);						
-	
-	render_SetTransform(textGroup, false, true, 1.0f, 
-		RealToVec3(2.0f / drawBuffer.w, 0, 0),
-		RealToVec3(0, 2.0f / drawBuffer.w, 0),
-		RealToVec3(0, 0, 1),							
-		EMPTY_V3, -10000.0f, 10000.0f);	
-						
-	if(world->cam.debugCam) {
-		struct mat4 cam0 = MultMat4(RotZ(world->cam.DEBUGorbit), RotX(world->cam.DEBUGpitch));		
-		union vec3 cam0T = Transform(cam0, AddVec3(world->cam.offset, 
-			RealToVec3(0, 0, world->cam.DEBUGdolly)), 1.0f);						
-		render_SetTransform(group, world->cam.debugCam, false, world->cam.DEBUGdolly, 
-			GetCol(cam0, 0),
-			GetCol(cam0, 1),
-			GetCol(cam0, 2),
-			cam0T, 0.1f, 1000.0f);			
-	}			
-	world_GetMouseCoords(input, group, world);
+	InitCamTransforms(group, textGroup, world, drawBuffer);	
 		
+	world_GetMouseCoords(input, group, world);		
+	
 	world->elevFlag = world_GetMouseElev(world);	
 	
 	render_PushMouseCoords(group, world->mouseRay[0]);
+	
 #ifdef DEBUG
 	char buffer[128];
 	sprintf(buffer, "x: %.1f y: %.1f z: %.1f", 
 	world->mouseCoords[0].x, world->mouseCoords[0].y, world->mouseCoords[0].z);
 	debug_TextOut(buffer, textGroup, tState, 0, 0.3);
 #endif	
+
 	world->timer = time_Update(world->timer);
 
 	CheckGlobalBars(world);
@@ -569,7 +531,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 	pub_RenderLimits(world);	
 	
 	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) {
-		if(ent->type == typedir_northull) {continue;}
+		if(ent->type == ETYPE_NULL) {continue;}
 		
 		
 		if(ent->state != entstate_onscreen && ent->alias != alias_char) continue;									

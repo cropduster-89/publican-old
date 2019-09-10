@@ -397,7 +397,7 @@ extern uint32_t entity_Add(struct world_mode *world,
 		uint32_t subIndex = entity_AddFurn(world, index);
 		world->entities[index].sub = &world->furniture[subIndex];
 		break;
-	} case typedir_northull: {
+	} case ETYPE_NULL: {
 		break;
 	} default: INVALID_PATH;	
 	}				

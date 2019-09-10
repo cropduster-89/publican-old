@@ -496,8 +496,7 @@ extern struct rect_int render_AspectFit(uint32_t rW,
 
 extern inline union vec4 Unproject(struct render_group *group,								    
 		        	   union vec2 pixelsXY,
-		        	   float zFromTarget,
-		        	   bool e)
+		        	   float zFromTarget)
 {
 	union vec4 probeZ = {};
 	probeZ = Vec3ToVec4(SUBVEC(group->camP, 

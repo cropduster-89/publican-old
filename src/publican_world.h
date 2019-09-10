@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef PUB_H
+#define PUB_H
 /************************************************************************************		
 __________     ___.   .__  .__                      	
 \______   \__ _\_ |__ |  | |__| ____ _____    ____  
@@ -38,14 +39,7 @@ struct world_cam {
 	float pitch;
 	float dolly;
 	
-	float editOffset;
-	
-	float DEBUGorbit;
-	float DEBUGpitch;
-	float DEBUGdolly;
-	
-	bool debugCam;
-	bool debugCamMove;
+	float editOffset;	
 };
 
 struct world_alerts {
@@ -99,3 +93,4 @@ struct world_mode {
 	struct edit_state edit;			
 };
 
+#endif

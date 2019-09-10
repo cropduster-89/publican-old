@@ -88,9 +88,9 @@ static enum direction path_GetCard(struct node_list *destNode,
 *		Gets the coords	for a given direction
 *		from the input pos
 */
-static struct point3 path_GetDir(int32_t dir, 
-				 struct point3 pos,
-				 int32_t floorFlag)
+static struct point3 GetDirection(int32_t dir, 
+				  struct point3 pos,
+				  enum floor_flag floorFlag)
 {
 	struct point3 result;
 	
@@ -112,7 +112,7 @@ static struct point3 path_GetDir(int32_t dir,
 *		correct dirction for the direction specified
 */
 static bool StepCheck(struct step_data step,
-			   enum direction dir)
+		      enum direction dir)
 {
 	bool result = false;	
 	if(dir % 2 == 0) {return(result);}
@@ -183,7 +183,7 @@ static inline bool path_StepLeave(struct tile_data new,
 static inline bool path_StepEmbark(struct tile_data new,
 				   struct tile_data currentNode,	
 				   enum direction dir,
-				   int floorFlag)
+				   enum floor_flag floorFlag)
 {
 	bool result = false;
 	
@@ -222,7 +222,7 @@ static inline bool path_StepEmbark(struct tile_data new,
 
 static inline bool IsNorthTilePassable(struct map_data *map,					
 				       enum direction dir,
-				       int32_t floorFlag,
+				       enum floor_flag floorFlag,
 				       struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -237,7 +237,7 @@ static inline bool IsNorthTilePassable(struct map_data *map,
 
 static inline bool IsNortheastTilePassable(struct map_data *map,
 					   enum direction dir,
-				           int32_t floorFlag,	
+				           enum floor_flag floorFlag,	
 				           struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -257,7 +257,7 @@ static inline bool IsNortheastTilePassable(struct map_data *map,
 
 static inline bool IsEastTilePassable(struct map_data *map,					
 				      enum direction dir,
-				      int32_t floorFlag,
+				      enum floor_flag floorFlag,
 				      struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -272,7 +272,7 @@ static inline bool IsEastTilePassable(struct map_data *map,
 
 static inline bool IsSoutheastTilePassable(struct map_data *map,
 					   enum direction dir,
-				           int32_t floorFlag,	
+				           enum floor_flag floorFlag,	
 				           struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -293,7 +293,7 @@ static inline bool IsSoutheastTilePassable(struct map_data *map,
 
 static inline bool IsSouthTilePassable(struct map_data *map,					
 				       enum direction dir,
-				       int32_t floorFlag,
+				       enum floor_flag floorFlag,
 				       struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -308,7 +308,7 @@ static inline bool IsSouthTilePassable(struct map_data *map,
 
 static inline bool IsSouthwestTilePassable(struct map_data *map,
 					   enum direction dir,
-				           int32_t floorFlag,	
+				           enum floor_flag floorFlag,	
 				           struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -328,7 +328,7 @@ static inline bool IsSouthwestTilePassable(struct map_data *map,
 
 static inline bool IsWestTilePassable(struct map_data *map,					
 				      enum direction dir,
-				      int32_t floorFlag,
+				      enum floor_flag floorFlag,
 				      struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -343,7 +343,7 @@ static inline bool IsWestTilePassable(struct map_data *map,
 
 static inline bool IsNorthwestTilePassable(struct map_data *map,
 					   enum direction dir,
-				           int32_t floorFlag,	
+				           enum floor_flag floorFlag,	
 				           struct point3 pos)
 {
 	struct tile_data c = tile_GetTile(map, pos);	
@@ -379,7 +379,7 @@ static inline bool IsNorthwestTilePassable(struct map_data *map,
 static bool TileIsPassable(enum direction dir, 
 			   struct map_data *map,
 			   struct point3 pos,
-			   int32_t floorFlag)
+			   enum floor_flag floorFlag)
 {
 	bool result = false;	
 		
@@ -418,7 +418,8 @@ static bool TileIsPassable(enum direction dir,
 	{				
 		result = IsWestTilePassable(map, dir, floorFlag, pos);	 	
 		break;
-	} case DIR_NORTHWEST: 
+	} 
+	case DIR_NORTHWEST: 
 	{			
 		result = IsNorthwestTilePassable(map, dir, floorFlag, pos);	 	
 		break;
@@ -430,11 +431,11 @@ static bool TileIsPassable(enum direction dir,
 *		Calculates whether or not floor above or		
 *		below can be tested
 */
-static int32_t path_GetFloorFlag(struct world_mode *world,
-				 struct path_node *currentNode,
-				 enum direction dir)
+static enum floor_flag CanChangeFloor(struct world_mode *world,
+				      struct path_node *currentNode,
+			              enum direction dir)
 {
-	int32_t result = 0;
+	enum floor_flag result = FLOOR_REMAIN;
 	
 	if(dir % 2 == 0) return(result);
 	
@@ -483,25 +484,18 @@ static int32_t path_GetFloorFlag(struct world_mode *world,
 	   tile_GetStepped(&world->map, currentNode->pos) &&
 	   tile_GetStepData(&world->map, currentNode->pos).rotation == upRot &&
 	   !tile_GetStepped(&world->map, upTestCoord)) 
-	{
-		   
-		struct step_data step = tile_GetStepData(&world->map, currentNode->pos);
-		
-		if(step.maxElev == 4.0f) 	{result = 1;}
-		else 				{result = 0;}
+	{		   
+		struct step_data step = tile_GetStepData(&world->map, currentNode->pos);		
+		if(step.maxElev == 4.0f) 	{result = FLOOR_ASCEND;}		
 		
 	} 
 	else if(currentNode->pos.z > 0 && 
 		!tile_GetStepped(&world->map, currentNode->pos) &&
 		tile_GetStepData(&world->map, downTestCoord).rotation == downRot &&
 		tile_GetStepped(&world->map, downTestCoord)) 
-	{
-			  
-		struct step_data step = 
-			tile_GetStepData(&world->map, downTestCoord);
-			
-		if(step.maxElev == 4.0f) 	{result = -1;} 
-		else 				{result = 0;}		
+	{			  
+		struct step_data step = tile_GetStepData(&world->map, downTestCoord);			
+		if(step.maxElev == 4.0f) 	{result = FLOOR_DESCEND;} 		
 	}
 	return(result);	
 }
@@ -523,7 +517,7 @@ static inline void path_DistanceTest(struct path_node *testNode,
 	testNode->parentPos = currentNode->pos;
 }
 
-static inline bool path_IsWithinMapExtents(struct map_data *map,
+static inline bool IsWithinMapExtents(struct map_data *map,
 					   struct point3 testDir)
 {
 	return(testDir.x >= 0 && testDir.x < map->sizeX &&
@@ -580,16 +574,16 @@ extern struct node_list *path_GetPath(struct point3 startPoint,
 	struct path_node *openList = startNode;	
 	struct point3 testCoords = {};
 	struct path_node *testNode = 0;
-	int32_t floorFlag = 0;	
+	enum floor_flag floorFlag = FLOOR_REMAIN;	
 	
 	while(currentNode != endNode) 
 	{		
 		for(enum direction dir = DIR_NORTH; dir <= DIR_NORTHWEST; ++dir) 
 		{				
-			testCoords = path_GetDir(dir, currentNode->pos, floorFlag);			
-			if(!path_IsWithinMapExtents(map, testCoords)) {continue;}	
+			testCoords = GetDirection(dir, currentNode->pos, floorFlag);			
+			if(!IsWithinMapExtents(map, testCoords)) {continue;}	
 			
-			floorFlag = path_GetFloorFlag(world, currentNode, dir);	
+			floorFlag = CanChangeFloor(world, currentNode, dir);	
 			if(!TileIsPassable(dir, map, currentNode->pos, floorFlag)) {continue;}					
 						
 			testNode = &pathGrid[testCoords.x][testCoords.y][testCoords.z];

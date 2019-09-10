@@ -1,8 +1,17 @@
 #ifndef MATHLIB_H
 #define MATHLIB_H
 
-#define _TAU 6.28318530717958647692f
-#define _PI 3.14159265358979323846f
+#define TAU (_TAU())
+extern inline float _TAU(void)
+{
+	return(6.28318530717958647692f);
+}
+
+#define PI (_PI())
+extern inline float _PI(void)
+{
+	return(3.14159265358979323846f);
+}
 
 union vec2 {
 	struct {
@@ -277,7 +286,7 @@ extern inline bool LessThanVec3(union vec3 a, union vec3 b)
 {
 	bool result = false;
 	
-	if(a.x <= b.x && a.y <= b.y && a.z <= b.z) {result = true;}
+	if(a.x < b.x && a.y < b.y && a.z < b.z) {result = true;}
 	
 	return(result);	
 }
@@ -286,7 +295,7 @@ extern inline bool MoreThanVec3(union vec3 a, union vec3 b)
 {
 	bool result = false;
 	
-	if(a.x >= b.x && a.y >= b.y && a.z >= b.z) {result = true;}
+	if(a.x > b.x && a.y > b.y && a.z > b.z) {result = true;}
 	
 	return(result);	
 }
@@ -353,6 +362,20 @@ extern inline float Magnitude(union vec3 a)
 	return(sqrtf(a.x * a.x + a.y * a.y + a.z * a.z));		
 }
 
+#define FORWARD_VEC (MouseForwardVector())
+extern inline union vec3 MouseForwardVector(void)
+{
+	union vec3 result = {.x = 1, .y = 1, .z = -0.815 };
+	return(result);
+}
+
+#define BACKWARD_VEC (MouseBackwardVector())
+extern inline union vec3 MouseBackwardVector(void)
+{
+	union vec3 result = {.x = -1, .y = -1, .z = 0.815 };
+	return(result);
+}
+
 extern inline union vec3 Normalise(union vec3 a)
 {
 	float mag = Magnitude(a);
@@ -378,28 +401,28 @@ extern inline union vec3 NormVec3(union vec3 a)
 }
 
 extern inline union vec4 Vec2ToVec4(union vec2 a,
-									float b,
-									float c)
+				    float b,
+				    float c)
 {
-		union vec4 result = {
-				.x = a.x,
-				.y = a.y,
-				.z = b,
-				.w = c,
-		};
-		return(result);
+	union vec4 result = {
+		.x = a.x,
+		.y = a.y,
+		.z = b,
+		.w = c,
+	};
+	return(result);
 }
 
 extern inline union vec4 Vec3ToVec4(union vec3 a,
-									float b)
+				    float b)
 {
-		union vec4 result = {
-				.x = a.x,
-				.y = a.y,
-				.z = a.z,
-				.w = a.w,
-		};
-		return(result);
+	union vec4 result = {
+		.x = a.x,
+		.y = a.y,
+		.z = a.z,
+		.w = a.w,
+	};
+	return(result);
 }
 
 extern inline void PrintVec(union vec3 a)
@@ -826,25 +849,25 @@ extern inline struct mat4 RotZ(float angle)
 }
 
 extern inline struct mat4 Rows3x3(union vec3 x,
-							   union vec3 y,
-							   union vec3 z)
+				  union vec3 y,
+				  union vec3 z)
 {
-		struct mat4 r = {
-			{{x.x, x.y, x.z , 0},
-			 {y.x, y.y, y.z, 0},
-			 {z.x, z.y, z.z, 0},
-			 {0, 0, 0, 1}}
-		};
-		return(r);
+	struct mat4 r = {
+		{{x.x, x.y, x.z , 0},
+		 {y.x, y.y, y.z, 0},
+		 {z.x, z.y, z.z, 0},
+		 {0, 0, 0, 1}}
+	};
+	return(r);
 }
 
 extern inline struct mat4 Cols3x3(union vec3 x,
-							   union vec3 y,
-							   union vec3 z)
+				  union vec3 y,
+				  union vec3 z)
 {
 		struct mat4 r = {
-			{{x.x, y.x, z.x , 0},
-		     {x.y, y.y, z.y, 0},
+			{{x.x, y.x, z.x, 0},
+			 {x.y, y.y, z.y, 0},
 			 {x.z, y.z, z.z, 0},
 			 {0, 0, 0, 1}}
 		};
@@ -886,15 +909,14 @@ static struct mat4 Translate(struct mat4 a,
 }
 
 extern union vec3 Transform(struct mat4 a,
-							union vec3 b,
-							float w)
-{
-		
-		union vec3 r;
-		r.x = b.x * a.e[0][0] + b.y * a.e[0][1] + b.z * a.e[0][2] + w * a.e[0][3];
-		r.y = b.x * a.e[1][0] + b.y * a.e[1][1] + b.z * a.e[1][2] + w * a.e[1][3];
-		r.z = b.x * a.e[2][0] + b.y * a.e[2][1] + b.z * a.e[2][2] + w * a.e[2][3];
-		return(r);
+			    union vec3 b,
+			    float w)
+{		
+	union vec3 r;
+	r.x = b.x * a.e[0][0] + b.y * a.e[0][1] + b.z * a.e[0][2] + w * a.e[0][3];
+	r.y = b.x * a.e[1][0] + b.y * a.e[1][1] + b.z * a.e[1][2] + w * a.e[1][3];
+	r.z = b.x * a.e[2][0] + b.y * a.e[2][1] + b.z * a.e[2][2] + w * a.e[2][3];
+	return(r);
 }
 
 extern union vec4 Transform4(struct mat4 a,
@@ -914,9 +936,9 @@ extern inline struct mat4 Transpose(struct mat4 a)
 	struct mat4 r;
 	
 	for(int j = 0; j <= 3; ++j) {
-			for(int i = 0; i <= 3; ++i) {
-					r.e[j][i] = a.e[i][j];
-			}
+		for(int i = 0; i <= 3; ++i) {
+			r.e[j][i] = a.e[i][j];
+		}
 	}
 	return(r);
 }
@@ -964,7 +986,7 @@ extern inline struct mat4_inv CamTrans(union vec3 x,
 
 extern inline float DegreesToRads(float a)
 {
-	return(a * _PI / 180);
+	return(a * PI / 180);
 }
 
 extern inline void _BITTOGGLE_U8(uint8_t *a,

@@ -1,4 +1,4 @@
-extern inline uint64_t time_GetTime()
+extern inline uint64_t time_GetTime(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
