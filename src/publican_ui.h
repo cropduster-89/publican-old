@@ -1,3 +1,7 @@
+#pragma once
+#ifndef PUB_UI_H
+#define PUB_UI_H
+
 /************************************************************************************		
 __________     ___.   .__  .__                      	
 \______   \__ _\_ |__ |  | |__| ____ _____    ____  
@@ -5,11 +9,10 @@ __________     ___.   .__  .__
  |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
  |____|   |____/|___  /____/__|\___  >____  /___|  /
                     \/             \/     \/     \/ 
-		    @still very much place-holder
-		    @if it works, no complaining
+		    
 *************************************************************************************/
-#ifndef PUB_UI_H
-#define PUB_UI_H
+
+#define DEF_LABEL_SIZE 32
 
 /********************************************************
 		FOR ALL UI ENUMS:
@@ -18,77 +21,66 @@ __________     ___.   .__  .__
 ********************************************************/
 
 enum ui_element_sate {
-	UISTATE_ALWAYSON,
-	UISTATE_VISIBLE,
+	UISTATE_ALWAYSON = 0,
+	UISTATE_VISIBLE = 8,
+	UISTATE_CLIPPED = 16,
 };
 
-enum panel_type {
-	panel_furn,
-	panel_char,
-	panel_relations,	
-	
-	panel_count
+enum element_type {
+	UITYPE_PANEL,
+	UITYPE_LABEL,
+	UITYPE_TEXTBUTTON,
 };
 
-enum button_type {
-	button_down,
-	button_up,		
-	button_collision,
-	button_scrollup,
-	button_scroll,
-	button_scrolldown,
+enum element_alias {
+	UIALIAS_BOTTOMPANEL,
+	UIALIAS_FLOORUP,
+	UIALIAS_FLOORDOWN,
+	UIALIAS_BUILD,
+	UIALIAS_CHARPANEL,
 	
-	button_count
+	UI_COUNT,
+};
+
+#define BUTTON_EVENT_CALLBACK(event) void event(struct world_mode *world, int32_t code)
+typedef BUTTON_EVENT_CALLBACK(button_event_callback);
+
+struct ui_label {
+	char text[DEF_LABEL_SIZE];
+	float scale;	
+};
+
+struct ui_text_button {
+	char text[DEF_LABEL_SIZE];
+	union vec2 textOffset;
+	float scale;	
+	union vec4 colour;	
+};
+
+struct ui_panel {
+	char *test;
+	float scale;
+	union vec4 colour;
 };
 
 struct ui_element {
-	uint32_t type;
-	uint8_t state;	
+	enum element_type type;
+	enum element_alias alias;
+	struct ui_element *parent;	
+	button_event_callback *callback;
+	uint64_t state;	
 	union vec2 pos;	
-	float height;
+	union vec2 dim;
+	union {
+		struct ui_panel panel;
+		struct ui_label label;
+		struct ui_text_button textButton;		
+	};	
 };
 
-struct ui_furnpanel {
-	char name[32];	
-	struct point2 namePos;
-};
-
-struct ui_charpanel {
-	char name[128];	
-	struct point2 namePos;
-	
-	char drunk[32];
-	struct point2 drunkTextPos;
-	struct point2 drunkBarPos;
-	char thirst[32];
-	struct point2 thirstTextPos;
-	struct point2 thirstBarPos;
-	char bladder[32];
-	struct point2 bladderTextPos;
-	struct point2 bladderBarPos;
-	
-	struct chara_stats *stats;
-	struct point2 relationsTextPos;
-	struct point2 relationsValPos;
-	
-	struct point2 scrollUp;
-	struct point2 scrollDown;
-	struct point2 scrollButton;
-	
-	uint8_t *relationNames[];
-	//int32_t relationNames[];	
-};
-
-struct ui_control {
-	struct ui_element buttons[button_count];
-	struct ui_element panels[panel_count];
-	
-	struct ui_charpanel charPanel;	
-	struct ui_furnpanel furnPanel;
-	
-	union vec2 cursorPos;
-		
+struct ui_control {	
 	bool init;	
+	struct ui_element elements[UI_COUNT];
 };
 
 #endif

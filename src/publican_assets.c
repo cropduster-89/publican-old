@@ -11,7 +11,7 @@ __________     ___.   .__  .__
 
 struct memory_arena nonRestoredMem;
 
-extern inline void BeginAssetLock(struct game_assets *assets)
+static inline void BeginAssetLock(struct game_assets *assets)
 {
 	for(;;) {
 		if(AtomicCompareExchangeUInt32(&assets->tState->opLock, 1, 0) == 0) {
@@ -20,13 +20,13 @@ extern inline void BeginAssetLock(struct game_assets *assets)
 	}
 }
 
-extern inline void EndAssetLock(struct game_assets *assets)
+static inline void EndAssetLock(struct game_assets *assets)
 {
-	asm ("sfence");
+	__asm__ volatile("":::"memory");
 	assets->tState->opLock = 0;
 }
 
-extern inline void InsertAssetHeaderAtFront(struct game_assets *assets,
+static inline void InsertAssetHeaderAtFront(struct game_assets *assets,
 					    struct asset_memory_header *header)
 {
 	struct asset_memory_header *sentinal = &assets->loadedAssetSentinal;
@@ -38,7 +38,7 @@ extern inline void InsertAssetHeaderAtFront(struct game_assets *assets,
 	header->next->prev = header;
 }
 
-extern inline void RemoveAssetHeaderFromList(struct asset_memory_header *header)
+static inline void RemoveAssetHeaderFromList(struct asset_memory_header *header)
 {
 	header->prev->next = header->next;
 	header->next->prev = header->prev;
@@ -64,10 +64,10 @@ extern struct task_with_memory *BeginTaskWithMemory(struct temp_state *tState,
 }
 
 
-extern inline void EndTaskWithMemory(struct task_with_memory *task)
+static inline void EndTaskWithMemory(struct task_with_memory *task)
 {
 	EndTempMem(task->memFlush);
-	asm ("sfence");
+	__asm__ volatile("":::"memory");
 	task->inUse = false;		
 }
 
@@ -119,7 +119,7 @@ static void LoadAssetWorkDirectly(struct load_asset_work *work)
 		}
 		}
 	}
-	asm ("sfence");
+	__asm__ volatile("":::"memory");
 	
 	if(!PlatformNoFileErrors(work->handle)) {
 		ZeroSize_(work->size, work->dest);
@@ -135,7 +135,7 @@ static PLATFORM_WORK_QUEUE_CALLBACK(LoadAssetWork)
 	EndTaskWithMemory(work->task);
 }
 
-extern inline struct asset_file *GetFile(struct game_assets *assets,
+static inline struct asset_file *GetFile(struct game_assets *assets,
 					 uint32_t fileIndex)
 {
 	assert(fileIndex < assets->fileCount);
@@ -143,7 +143,7 @@ extern inline struct asset_file *GetFile(struct game_assets *assets,
 	return(result);
 }
 
-extern inline struct platform_file_handle *GetFileHandleFor(struct game_assets *assets,
+static inline struct platform_file_handle *GetFileHandleFor(struct game_assets *assets,
 															uint32_t fileIndex)
 {
 		struct platform_file_handle * result = &GetFile(assets, fileIndex)->handle;
@@ -401,7 +401,7 @@ static uint32_t Find_Asset(struct game_assets *assets,
 	return(type->firstIndex + offset);
 }
 
-extern inline struct bmp_id asset_FindBMP(struct game_assets *assets, 
+static inline struct bmp_id asset_FindBMP(struct game_assets *assets, 
 					  enum asset_type_id id,
 					  uint32_t bmpOffset)
 {
@@ -409,7 +409,7 @@ extern inline struct bmp_id asset_FindBMP(struct game_assets *assets,
 	return(result);
 }
 
-extern inline struct bmp_id asset_FindChar(struct game_assets *assets, 
+static inline struct bmp_id asset_FindChar(struct game_assets *assets, 
 					   enum asset_type_id id,
 					   uint32_t glyph)
 {
@@ -420,7 +420,7 @@ extern inline struct bmp_id asset_FindChar(struct game_assets *assets,
 	return(result);
 }
 
-extern inline struct mesh_id asset_FindMesh(struct game_assets *assets, 
+static inline struct mesh_id asset_FindMesh(struct game_assets *assets, 
 											enum asset_type_id id,
 											uint8_t rot)
 {
@@ -443,7 +443,7 @@ static inline uint32_t asset_GetFirstSlot(struct game_assets *assets,
 		return(result);
 }
 
-extern inline struct bmp_id asset_GetFirstBMP(struct game_assets *assets, 
+static inline struct bmp_id asset_GetFirstBMP(struct game_assets *assets, 
 											  enum asset_type_id id, 
 											  uint32_t offset)
 {
@@ -451,7 +451,7 @@ extern inline struct bmp_id asset_GetFirstBMP(struct game_assets *assets,
 		return(result);
 }
 
-extern inline struct bmp_id asset_GetChar(struct game_assets *assets, 
+static inline struct bmp_id asset_GetChar(struct game_assets *assets, 
 											  enum asset_type_id id,
 											  uint8_t glyph)
 {
@@ -460,7 +460,7 @@ extern inline struct bmp_id asset_GetChar(struct game_assets *assets,
 }
 */
 
-extern inline struct asset_memory_header *GetAsset(struct game_assets *assets,
+static inline struct asset_memory_header *GetAsset(struct game_assets *assets,
 						   uint32_t id)
 {	
 	if(id > assets->assetCount) {printf("%d\n", id);}
@@ -473,14 +473,14 @@ extern inline struct asset_memory_header *GetAsset(struct game_assets *assets,
 			result = asset->header;
 			RemoveAssetHeaderFromList(result);
 			InsertAssetHeaderAtFront(assets, result);			
-			asm ("sfence");
+			__asm__ volatile("":::"memory");
 	}
 	EndAssetLock(assets);
 	
 	return(result);
 }
 
-extern inline struct loaded_bmp *assets_GetBMP(struct game_assets *assets,
+static inline struct loaded_bmp *assets_GetBMP(struct game_assets *assets,
 					       struct bmp_id id)
 {
 	struct asset_memory_header *header = GetAsset(assets, id.val);
@@ -489,7 +489,7 @@ extern inline struct loaded_bmp *assets_GetBMP(struct game_assets *assets,
 	return(result);
 }
 
-extern inline struct loaded_mesh *assets_GetMesh(struct game_assets *assets,
+static inline struct loaded_mesh *assets_GetMesh(struct game_assets *assets,
 						 struct mesh_id id)
 {
 	struct asset_memory_header *header = GetAsset(assets, id.val);

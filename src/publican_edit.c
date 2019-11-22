@@ -11,11 +11,13 @@ static void DEBUG_AddChar(struct world_mode *world)
 
 static void edit_SaveWorld(struct world_mode *world)
 {
-	FILE *handle1 = fopen("world", "wb");;
+	FILE *handle1; 
+	fopen_s(&handle1, "world", "wb");;
 	if(!handle1) {printf("world save fialed\n");}	
 	fwrite(world, sizeof(struct world_mode), 1, handle1);
 	
-	FILE *handle2 = fopen("tile", "wb");
+	FILE *handle2; 
+	fopen_s(&handle2, "tile", "wb");
 	if(!handle2) {printf("tile save fialed\n");}
 	fwrite(world->map.tiles, sizeof(struct tile_data) * world->map.sizeX * 
 		world->map.sizeY * world->map.sizeZ, 1, handle2);		
@@ -118,7 +120,7 @@ static inline void edit_MakePillar(struct world_mode *world,
 {
 	if(entity_FindPillarByPos(world, pos)) {return;}
 		
-	uint32_t index = entity_Add(world, type_struc);
+	uint32_t index = entity_Add(world, ENTTYPE_OBJ);
 	entity_InitStruc(world, index, alias_pillar, pos.x, pos.y, pos.z, 
 	0, EMPTY_V3, 0, 0);	
 	struct entity_struc *placedPillar = GET_STRUCFROMENTINDEX(world, index);
@@ -237,8 +239,8 @@ extern void edit_WallPlace(struct world_mode *world)
 		}							
 		if(wallVal == 3) {tile_SetWalled(&world->map, coordPos, 3);}	
 			
-		uint32_t index = entity_Add(world, type_struc);
-		entity_InitStruc(world, index, alias_wall, pos.x, pos.y, pos.z, 
+		uint32_t index = entity_Add(world, ENTTYPE_OBJ);
+		entity_InitStruc(world, index, ENTALIAS_WALL, pos.x, pos.y, pos.z, 
 			rotation, offset, 0, meshType);
 				
 		struct entity_struc *placedWalled = GET_STRUCFROMENTINDEX(world, index);
@@ -333,12 +335,12 @@ extern void edit_PlacementSelect(struct world_mode 	*state,
 	int32_t alias = 0;	
 	int32_t asset = 0;	
 	if(input->buttons._C.endedDown) {
-		alias = alias_stool;
+		alias = ENTALIAS_STOOL;
 		asset = asset_stool;
 		input->buttons._C.endedDown = 0;
 		
 	} else if(input->buttons._T.endedDown) {
-		alias = alias_table2x1;
+		alias = ENTALIAS_TABLE;
 		asset = asset_table;
 		input->buttons._T.endedDown = 0;
 		
@@ -358,12 +360,12 @@ extern void edit_PlacementSelect(struct world_mode 	*state,
 		input->buttons._P.endedDown = 0;
 		
 	} else if(input->buttons.DIR_SOUTH.endedDown) {
-		alias = alias_support;
-		asset = asset_support;	
+		alias = ENTALIAS_SUPPORT;
+		asset = ENTALIAS_SUPPORT;	
 		input->buttons.DIR_SOUTH.endedDown = 0;
 		
 	} else if(input->buttons.DIR_WEST.endedDown) {
-		alias = alias_wall;
+		alias = ENTALIAS_WALL;
 		asset = asset_wall;			
 		input->buttons.DIR_WEST.endedDown = 0;
 		
@@ -414,12 +416,12 @@ static void edit_PlaceFloor(struct world_mode *world)
 		printf("already exists\n\n");
 		return;
 	}	
-	uint32_t index = entity_Add(world, type_struc);
+	uint32_t index = entity_Add(world, ENTTYPE_OBJ);
 	entity_InitStruc(world, index, current->ent->alias, 
 		basePos.x, basePos.y, basePos.z, current->rot, 
 		RealToVec3(0, 0, 0.0f), 0, 0);	
-	index = entity_Add(world, type_struc);		
-	entity_InitStruc(world, index, alias_floor, 
+	index = entity_Add(world, ENTTYPE_OBJ);		
+	entity_InitStruc(world, index, ENTALIAS_FLOOR, 
 		basePos.x, basePos.y, basePos.z, current->rot, 
 		RealToVec3(0, 0, 1.0f), floor_bmp_wood, 0);
 	tile_SetElevation(&world->map, basePos, 2);		
@@ -491,7 +493,7 @@ static void edit_PlaceBigSteps(struct world_mode *world)
 		tile_SetStepData(&world->map, coordP, newStep);			
 		tile_SetStepped(&world->map, coordP, true);	
 		
-		uint32_t index = entity_Add(world, type_struc);
+		uint32_t index = entity_Add(world, ENTTYPE_OBJ);
 		entity_InitStruc(world, index, alias_steps, 
 			newP.x, newP.y, newP.z, 
 			current->rot, RealToVec3(0.0, 0.0, 0.0), 0, 0);
@@ -565,7 +567,7 @@ static void edit_PlaceSteps(struct world_mode *world)
 		tile_SetStepData(&world->map, basePos, newStep);
 		tile_SetStepped(&world->map, basePos, true);	
 		
-		uint32_t index = entity_Add(world, type_struc);
+		uint32_t index = entity_Add(world, ENTTYPE_OBJ);
 		
 		entity_InitStruc(world, index, current->ent->alias, 
 			basePos.x, basePos.y, 
@@ -653,7 +655,7 @@ static void edit_PlaceStool(struct world_mode *world)
 	union vec3 offset = RealToVec3(0, 0, 0);
 	offset.z = tile_GetElevation(&world->map, coords) ? 1.0f : 0;
 			
-	uint32_t index = entity_Add(world, type_furn);
+	uint32_t index = entity_Add(world, ENTTYPE_FURN);
 	entity_InitStruc(world, index, current->ent->alias, 
 		basePos.x, basePos.y, basePos.z, current->rot, 
 		offset, 0, 0);	
@@ -740,14 +742,14 @@ static void edit_PlaceObject(struct world_mode *world)
 		basePos.y,
 		basePos.z / 4,
 	};	
-	uint32_t index = entity_Add(world, type_furn);
+	uint32_t index = entity_Add(world, ENTTYPE_FURN);
 	union vec3 offset = RealToVec3(0, 0, 0);
 	offset.z = tile_GetElevation(&world->map, coord) ? 1.0f : 0;
 	entity_InitFurn(world, index, current->ent->alias, 
 		    basePos.x, basePos.y, basePos.z , current->rot, 
 		    offset);
 				
-	if(current->ent->alias == alias_stool || current->ent->alias == alias_wall) return;
+	if(current->ent->alias == ENTALIAS_STOOL || current->ent->alias == ENTALIAS_WALL) return;
 	
 	printf("placed at %d %d %d\n", basePos.x, basePos.y, basePos.z);
 	
@@ -770,15 +772,15 @@ static void edit_PlaceItem(struct world_mode *world)
 	struct edit_placed_entity *current = &edit->current;
 			
 	switch(current->ent->alias) {
-	case alias_wall: {
+	case ENTALIAS_WALL: {
 		break;
-	} case alias_support: {
+	} case ENTALIAS_SUPPORT: {
 		edit_PlaceFloor(world);
 		break;
 	} case alias_steps: {
 		edit_PlaceSteps(world);
 		break;
-	} case alias_stool: {
+	} case ENTALIAS_STOOL: {
 		if(edit->parentEntity) {
 			edit_PlaceStool(world);
 		}		
@@ -849,19 +851,19 @@ static void edit_DisplayPlacement(struct world_mode 	*world,
 		input->buttons._R.endedDown = 0;
 	} 	
 	union vec3 coords = world->mouseCoords[world->elevFlag];	
-	if(current->ent->alias == alias_support) {coords = world->mouseCoords[0];} 
+	if(current->ent->alias == ENTALIAS_SUPPORT) {coords = world->mouseCoords[0];} 
 	
 	union vec3 offset = {
 		.x = floorf(coords.x) - world->cam.pos.x,
 		.y = floorf(coords.y) - world->cam.pos.y,
-		.z = current->ent->alias == alias_support ? coords.z : 
+		.z = current->ent->alias == ENTALIAS_SUPPORT ? coords.z : 
 			coords.z + world->elevFlag * 0.5f,
 	};	
 	
 	current->trans.offset = offset;				
 	current->trans.offset = AddVec3(current->trans.offset, current->rotOffset);			
 	
-	if(edit->current.ent->alias == alias_wall)  {	
+	if(edit->current.ent->alias == ENTALIAS_WALL)  {	
 	
 		if(input->buttons.lClick.isDown) {	
 			edit_WallPrompt(world, group, true);		
@@ -873,11 +875,11 @@ static void edit_DisplayPlacement(struct world_mode 	*world,
 			edit_WallPrompt(world, group, false);
 		}
 		
-	} else if(edit->current.ent->alias == alias_stool) {		
+	} else if(edit->current.ent->alias == ENTALIAS_STOOL) {		
 		for(int32_t i = 0; i < world->furnCount; ++i) {
 			
 			struct entity *ent = GET_FURNBASEFROMINDEX(world, i);
-			if(ent->alias == alias_table2x1) {
+			if(ent->alias == ENTALIAS_TABLE) {
 				if(edit_ChairPlacement(Vec3ToPoint3(coords), 
 					Vec3ToPoint3(ent->pos.xyz), ent->rotation)) {
 					render_PushMesh(group, asset_FindMesh(tState->assets, current->id, 1), 

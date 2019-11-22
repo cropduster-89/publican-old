@@ -163,7 +163,7 @@ struct char_intent {
 	};
 };
 
-extern inline struct char_intent SET_NULLINTENT(void)
+static inline struct char_intent SET_NULLINTENT(void)
 {
 	struct char_intent nullIntent = {};
 	return(nullIntent);

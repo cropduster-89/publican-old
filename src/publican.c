@@ -31,9 +31,7 @@ extern void pub_MainLoop(struct pub_memory *memory,
 		tState->assets = assets_Allocate(MEGABYTES(256), tState, &memory->textureOpQueue);  	
 		printf("TState Allocated\n");	
 	}		 
-	
-	struct temp_memory renderMem = BeginTempMem(&tempArena);
-	
+		
 	struct loaded_bmp drawBuffer = {};		
 	drawBuffer.w = commands->w;
 	drawBuffer.h = commands->h;
@@ -49,12 +47,7 @@ extern void pub_MainLoop(struct pub_memory *memory,
 	world_UpdateAndRender(state, tState, input, renderGroup, textGroup, drawBuffer);	
 	
 	debug_OutputCycles(memory, textGroup, tState);
-	
-	//render_Output(renderGroup.commands);
-	//render_Output(textGroup.commands);
-	
-	EndTempMem(renderMem);						 
-					
+						
 	CheckArena(&state->modeArena);		
 	CheckArena(&tState->tempArena);							
 }

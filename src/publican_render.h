@@ -23,7 +23,7 @@ struct camera_params {
 	float focalLength;
 };
 
-extern inline struct camera_params GetCamParams(uint32_t w, float focalLength)
+static inline struct camera_params GetCamParams(uint32_t w, float focalLength)
 {
 	struct camera_params result;
 	
@@ -47,7 +47,7 @@ struct bmp_dim {
 	union vec3 pos;
 };	 
 
-extern inline struct object_transform render_UprightTrans(void)
+static inline struct object_transform render_UprightTrans(void)
 {
 	struct object_transform result = {};
 	
@@ -57,7 +57,7 @@ extern inline struct object_transform render_UprightTrans(void)
 	return(result);
 }
 
-extern inline struct object_transform render_FlatTrans(void)
+static inline struct object_transform render_FlatTrans(void)
 {
 	struct object_transform result = {};		
 	

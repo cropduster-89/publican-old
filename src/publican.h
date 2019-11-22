@@ -9,13 +9,13 @@ __________     ___.   .__  .__
 		    @still a bit random
 		    @keep headers in order or risk sadness
 *************************************************************************************/
-extern inline uint32_t Float2Uint(float a)
+static inline uint32_t Float2Uint(float a)
 {
 		uint32_t result = (uint32_t)roundf(a);
 		return(result);
 }
 
-extern inline int32_t Float2Int(float a)
+static inline int32_t Float2Int(float a)
 {
 		int32_t result = (int32_t)roundf(a);
 		return(result);
@@ -101,7 +101,6 @@ struct pub_graphics_buffer {
 #define MAX_VERTEX 0xFFFFF
 #define MAX_ELEMENT 0xFFFFF
 #define MAX_MESHCOMMAND 0xFFFF
-
 
 struct gl_mesh_render_command {
 	GLuint vertexCount;

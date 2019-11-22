@@ -1,4 +1,4 @@
-extern inline struct push_buffer_result PushBuffer(struct render_group *group,
+static inline struct push_buffer_result PushBuffer(struct render_group *group,
 												   uint32_t dataSize)
 {
 	struct render_commands *commands = group->commands;
@@ -55,7 +55,7 @@ static inline struct bmp_dim render_BMPDim(struct render_group *group,
 	return(dim);
 }
 
-extern inline void render_PushLoadedBMP(struct render_group *group,
+static inline void render_PushLoadedBMP(struct render_group *group,
 					struct object_transform objT,	
 					struct loaded_bmp *bmp,
 					float height,				
@@ -214,7 +214,7 @@ static inline struct bmp_dim render_SpriteDim(struct render_group *group,
 	return(dim);
 }
 
-extern inline void render_PushLoadedSprite(struct render_group *group,
+static inline void render_PushLoadedSprite(struct render_group *group,
 					   struct object_transform objT,	
 					   struct loaded_bmp *bmp,
 					   float height,				
@@ -254,7 +254,7 @@ extern inline void render_PushLoadedSprite(struct render_group *group,
 	} else INVALID_PATH;				
 }
 
-extern inline void render_PushBMP(struct render_group *group,
+static inline void render_PushBMP(struct render_group *group,
 				  struct object_transform trans,	
 				  struct bmp_id id,
 				  float height,				
@@ -270,7 +270,7 @@ extern inline void render_PushBMP(struct render_group *group,
 	}		
 }
 
-extern inline void render_PushSprite(struct render_group *group,
+static inline void render_PushSprite(struct render_group *group,
 				     struct object_transform trans,	
 				     struct bmp_id id,
 				     float height,				
@@ -290,7 +290,7 @@ extern inline void render_PushSprite(struct render_group *group,
 	}		
 }
 
-extern inline void render_PushRect(struct render_group *group,
+static inline void render_PushRect(struct render_group *group,
 				   union vec3 pos,
 				   union vec2 dim,
 				   union vec4 colour)
@@ -310,7 +310,7 @@ extern inline void render_PushRect(struct render_group *group,
 *	TODO: uint32_t colour is old! convert to vec4
 *
 */
-extern inline void render_PushCube(struct render_group *group,				   
+static inline void render_PushCube(struct render_group *group,				   
 				   union vec3 pos,
 				   float radius,
 				   float height,
@@ -330,7 +330,7 @@ extern inline void render_PushCube(struct render_group *group,
 	}	
 }
 
-extern inline void render_PushMouseCoords(struct render_group *group,
+static inline void render_PushMouseCoords(struct render_group *group,
 					  union vec3 pos)
 {
 	struct render_entry_mouse *entry = render_PushEntry(group, 
@@ -361,7 +361,7 @@ static struct mat4 inline render_ApplyRotation(int32_t rotation)
 	return(result);
 }
 
-extern inline void render_PushMesh(struct render_group *group,
+static inline void render_PushMesh(struct render_group *group,
 				   struct mesh_id idMesh,
 				   struct bmp_id idBMP,
 				   union vec3 pos,	
@@ -494,7 +494,7 @@ extern struct rect_int render_AspectFit(uint32_t rW,
 	return(result);
 }
 
-extern inline union vec4 Unproject(struct render_group *group,								    
+static inline union vec4 Unproject(struct render_group *group,								    
 		        	   union vec2 pixelsXY,
 		        	   float zFromTarget)
 {

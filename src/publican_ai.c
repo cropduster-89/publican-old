@@ -507,7 +507,7 @@ static void Tiolet(struct world_mode *world,
 #endif								
 				break;
 			} else {
-				intent->drink.stage = tiolet_walk;					
+				intent->tiolet.stage = tiolet_walk;					
 				user->activePath = 1;
 			}				
 		}
@@ -515,7 +515,7 @@ static void Tiolet(struct world_mode *world,
 	} case tiolet_walk: {
 		entity_Move(user, world);
 		if(!user->activePath) {						
-			intent->purchase.stage = tiolet_defecate;
+			intent->tiolet.stage = tiolet_defecate;
 			ai_StartTimedEvent(world, user);	
 		}		
 		break;
@@ -540,7 +540,7 @@ static void Drink(struct world_mode *world,
 	
 	switch(intent->drink.stage) {
 	case drink_init: {
-		if(GetEmptyFurn(world, punter, alias_stool)) {			
+		if(GetEmptyFurn(world, punter, ENTALIAS_STOOL)) {			
 			
 			struct point3 currentPos = Vec3ToPoint3(
 				GET_CHARBASE(world, punter)->pos.xyz);
@@ -571,7 +571,7 @@ static void Drink(struct world_mode *world,
 		entity_Move(punter, world);
 		if(!punter->activePath) {	
 			GET_CHARBASE(world, punter)->rotation = SetTableFacing(world, punter);
-			intent->purchase.stage = drink_drink;			
+			intent->drink.stage = drink_drink;			
 			time_StartTimedEvent(world, &punter->actionTime,
 				ai_GetActionTime(punter->intent));
 		}
@@ -602,8 +602,7 @@ static void Nothing(struct world_mode *world,
 	struct char_intent *intent = &chara->intent;
 	
 	switch(intent->nothing.stage) {
-	case nothing_init: {
-		
+	case nothing_init: {		
 		if(rand() % 4 < 1) {
 			intent->nothing.stage = nothing_wander;
 			int32_t x = GET_CHARCOORDS(world, chara).x + ((rand() % 6) - 3);
@@ -636,8 +635,7 @@ static void Nothing(struct world_mode *world,
 			chara->intent = SET_NULLINTENT();			
 		}		
 		break;
-	} case nothing_loiter: {
-		
+	} case nothing_loiter: {		
 		if(time_EndTimedEvent(world, &chara->actionTime)) {
 			chara->intent = SET_NULLINTENT();
 		}
@@ -724,7 +722,7 @@ static enum entity_intent StaffIntent(struct world_mode *world,
 	} else {
 		result = intent_nothing;
 		current->intent.type = intent_nothing;
-		current->intent.purchase.stage = nothing_init;	
+		current->intent.nothing.stage = nothing_init;	
 	}	
 	return(result);
 }
@@ -737,13 +735,13 @@ static enum entity_intent PunterIntent(struct world_mode *world,
 	if(current->stats.bladder > 0.75f) {
 		result = intent_tiolet; 
 		current->intent.type = result;
-		current->intent.purchase.stage = tiolet_init;
+		current->intent.tiolet.stage = tiolet_init;
 		return(result);
 	} else if(current->stats.thirst < 0.5f) {
 		if(ai_CheckInv(item_beer, current->stats.inv)) {
 			result = intent_drink;
 			current->intent.type = result;
-			current->intent.purchase.stage = drink_init;
+			current->intent.drink.stage = drink_init;
 		} else if(!ai_CheckInv(item_beer, current->stats.inv)){
 			result = intent_purchase;
 			current->intent.type = intent_purchase;
@@ -752,7 +750,7 @@ static enum entity_intent PunterIntent(struct world_mode *world,
 	} else {
 		result = intent_nothing;
 		current->intent.type = intent_nothing;
-		current->intent.purchase.stage = nothing_init;		
+		current->intent.nothing.stage = nothing_init;		
 	}		
 	return(result);
 }

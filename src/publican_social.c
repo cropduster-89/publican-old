@@ -55,7 +55,7 @@ extern int32_t chara_GetAtrMod(int32_t val)
 	return(result);
 }
 
-extern inline void social_NewRelation(struct entity_char *chara,
+static inline void social_NewRelation(struct entity_char *chara,
 				      uint32_t index)
 {
 	struct social_relation newRelation = {};
@@ -80,21 +80,21 @@ static bool social_HasMet(struct entity_char *charaA,
 static inline enum interaction_types social_PickNeutralInteraction(int32_t roll)
 {
 	int32_t selection = rand() % 2;
-	enum interaction_types result = interactiondir_northull;
+	enum interaction_types result = INTERACT_NULL;
 	
 	if(roll < 5) {
 		if(!selection) {
-			result = interaction_badjoke;
+			result = INTERACT_BADJOKE;
 		} else {
-			result = interaction_badchat;
+			result = INTERACT_BADCHAT;
 		}
 	} else if(roll < 10) {		
-		result = interactiondir_northeuttalk;		
+		result = INTERACT_TALK;		
 	} else {
 		if(!selection) {
-			result = interaction_goodjoke;
+			result = INTERACT_GOODJOKE;
 		} else {
-			result = interaction_goodchat;
+			result = INTERACT_GOODCHAT;
 		}
 	}
 	return(result);
@@ -102,7 +102,7 @@ static inline enum interaction_types social_PickNeutralInteraction(int32_t roll)
 	
 static inline enum interaction_types social_GetInteraction(int32_t charisma)
 {
-	enum interaction_types result = interactiondir_northull;
+	enum interaction_types result = INTERACT_NULL;
 	
 	int32_t roll = chara_GetAtrMod(charisma) + (rand() % 20); 	
 	if(roll > 12) {
@@ -138,9 +138,9 @@ extern void social_InitInteraction(struct world_mode *world,
 	if(charaB->interaction && 
 	   charaB->socialTarget.ent != GET_CHARBASE(world, charaA)) { 
 		return;	
-	} 
-	
-	SET_SOCIALTARGET(world, charaA, charaB);	
+	}
+
+    SET_SOCIALTARGET(world, charaA, charaB);
 	time_StartTimedEvent(world, &charaA->socialTime, CHAT_TIME);
 	charaA->bubble = true;
 }

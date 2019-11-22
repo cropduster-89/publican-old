@@ -10,6 +10,7 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 #pragma GCC diagnostic ignored "-Wswitch"
 #pragma GCC diagnostic ignored "-Wcomment"
 #pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
+#pragma GCC diagnostic ignored "-Wabsolute-value"
 
 #define WINVER 0x0600
 #define _WIN32_WINNT 0x0600
@@ -24,19 +25,17 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 #include <math.h>
 #include <assert.h>
 #include <limits.h>
-#include <sys/time.h>
+#include <xmmintrin.h>
 
-#define WIN_X 1400
+#ifdef DEBUG
+#define WIN_X 1600
 #define WIN_Y 900
+#endif
 
 typedef char GLchar;
 typedef int64_t GLsizeiptr;
 
 struct platform_api platform;
-
-static HDC globalDC;
-static HGLRC globalHGLRC;
-static struct win32_state globalWin32State;
 
 #define WGL_DRAW_TO_WINDOW_ARB                  0x2001
 #define WGL_ACCELERATION_ARB                    0x2003
@@ -147,7 +146,6 @@ static gl_enable_vertex_attrib_array *glEnableVertexAttribArray;
 static gl_vertex_attrib_divisor *glVertexAttribDivisor;
 static gl_vertex_attrib_pointer *glVertexAttribPointer;
 static gl_vertex_attrib_i_pointer *glVertexAttribIPointer;
-static gl_bind_framebuffer *glBindFramebuffer;
 static gl_generate_mipmap *glGenerateMipmap;
 static gl_gen_vertex_arrays *glGenVertexArrays;
 static gl_gen_framebuffers *glGenFramebuffers;
@@ -203,7 +201,7 @@ extern struct file_read_output win32_ReadFile(char *filename)
 {
 	struct file_read_output result = {};
 	HANDLE handle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 
-				    0, OPEN_EXISTING, 0, 0);
+		    0, OPEN_EXISTING, 0, 0);
 	if(handle == INVALID_HANDLE_VALUE) {
 		//escape;
 	}		
@@ -211,22 +209,25 @@ extern struct file_read_output win32_ReadFile(char *filename)
 	if(GetFileSizeEx(handle, &size)) {
 		uint32_t size32 = size.QuadPart;
 		result.contents = VirtualAlloc(0, size32, 
-							MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+			MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 		if(!result.contents) {
-				//escape;
+			//escape;
 		}
 		DWORD bytesRead;
 		if(ReadFile(handle, result.contents, size32, &bytesRead, 0) &&
 		(size32 == bytesRead)) {
-				result.contentsSize = size32;
+			result.contentsSize = size32;
 		} else {
-				VirtualFree(result.contents, 0, MEM_RELEASE);
-				result.contents = 0;
+			VirtualFree(result.contents, 0, MEM_RELEASE);
+			result.contents = 0;
 		}
 	}
 	return(result);
 }
 #include "publican.c"
+
+static HGLRC globalHGLRC;
+static struct win32_state globalWin32State;
 
 /********************************************************************************
 		Platform API Specific Gubbins
@@ -471,7 +472,7 @@ static void win32_LoadWGLExtensions(void)
 				char *extensions = (char *)wglGetExtensionsStringEXT();
 				char *at = extensions;
 				while(*at) {
-						while(IsWhitespace(*at)) {++at;}
+					while(IsWhitespace(*at)) {++at;}
 					char *end = at;
 					while(*end && !IsWhitespace(*end)) {++end;}
 					uintptr_t count = end - at;
@@ -783,7 +784,7 @@ static void win32_AddEntry(struct platform_work_queue *queue,
 	entry->callback = callback;
 	entry->data = data;
 	++queue->completionGoal;
-	asm ("sfence");
+	__asm__ volatile("":::"memory");
 	queue->nextToWrite = newNextEntryToWrite;
 	ReleaseSemaphore(queue->semaphoreHandle, 1, 0);
 }
@@ -847,8 +848,8 @@ static void win32_MakeQueue(struct platform_work_queue *queue,
 	queue->nextToRead = 0;
 	
 	uint32_t initialCount = 0;
-	queue->semaphoreHandle = CreateSemaphore(0, initialCount, 
-		threadCount, 0);
+	queue->semaphoreHandle = CreateSemaphoreEx(0, initialCount, 
+		threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 	
 	for(uint32_t i = 0; i < threadCount; ++i) 
 	{				
@@ -857,29 +858,28 @@ static void win32_MakeQueue(struct platform_work_queue *queue,
 		
 		DWORD threadID;
 		HANDLE threadHandle = CreateThread(0, 0, ThreadProc,
-			startups, 0, &threadID);
+			startup, 0, &threadID);
 		CloseHandle(threadHandle);								   
 	}												 
 }
 
-static void LimitFps(uint64_t lastTimeStamp)
+static void LimitFps(LARGE_INTEGER lastCounter,
+		     bool timeGranularity)
 {
 #define TARGET_FPS 60
 #define TARGET_SPF (1.0f / TARGET_FPS)	
-	
-	uint64_t workCounter = time_GetTime();
-	uint64_t workSecondsElapsed = (workCounter - lastTimeStamp);				
-	uint64_t secondsElapsedForFrame = workSecondsElapsed;
-	
+	LARGE_INTEGER workCounter = win32_GetWallClock();
+	float secondsElapsedForFrame = win32_GetSecondsElapsed(lastCounter, workCounter);			
 	if(secondsElapsedForFrame < TARGET_SPF) 
 	{
-		uint32_t sleepMS = (1000.0f * (TARGET_SPF - secondsElapsedForFrame));
-		if(sleepMS > 0.0f) Sleep(sleepMS);						
+		DWORD sleepMS = (DWORD)(1000.0f * (TARGET_SPF - secondsElapsedForFrame));
+		if(timeGranularity) {if(sleepMS > 0.0f) Sleep(sleepMS);}						
 		while(secondsElapsedForFrame < TARGET_SPF) 
 		{
-			secondsElapsedForFrame = (workCounter - time_GetTime());									
+			secondsElapsedForFrame = win32_GetSecondsElapsed(lastCounter, 
+				win32_GetWallClock());									
 		}
-	}	
+	}
 }
 
 static void UpdateCursor(HWND window,
@@ -893,6 +893,25 @@ static void UpdateCursor(HWND window,
 	input->mouseY = (float)((dim.y - 1) - mousePos.y);	
 }
 
+static HWND CreateMainWindow(HINSTANCE hInstance)
+{
+	WNDCLASSEX winClass = {};		
+	winClass.cbSize = sizeof(WNDCLASSEX);
+	winClass.style = CS_OWNDC;
+	winClass.lpfnWndProc = WindowProc;
+	winClass.hInstance = hInstance;
+	winClass.hCursor = LoadCursor(0, IDC_ARROW);
+	winClass.lpszClassName = "Pub";	
+	assert(RegisterClassEx(&winClass));
+
+	HWND result = CreateWindowEx(0, "Pub", "Publican",	
+		WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+		CW_USEDEFAULT,	WIN_X, WIN_Y,	
+		NULL, NULL, hInstance, NULL);
+	assert(result);	
+	return(result);	
+}
+
 /*
 *		Entry point for Windows. 
 */
@@ -903,32 +922,11 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 {
 	struct win32_state *winState = &globalWin32State;
 	winState->memSentinal.prev = &winState->memSentinal;
-	winState->memSentinal.next = &winState->memSentinal;		
-			
-	WNDCLASSEX winClass = {};		
-	winClass.cbSize = sizeof(WNDCLASSEX);
-	winClass.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
-	winClass.lpfnWndProc = WindowProc;
-	winClass.hInstance = hInstance;
-	winClass.hCursor = LoadCursor(0, IDC_ARROW);
-	winClass.lpszClassName = "Pub";
+	winState->memSentinal.next = &winState->memSentinal;			
 	
-	if(!RegisterClassEx(&winClass)) 
-	{
-#ifdef DEBUG		
-		printf("RegisterClassEx failed.\n");
-#endif			
-		return(1);
-	}	
-	HWND window = CreateWindowEx(0, "Pub", "Publican",	
-		WS_VISIBLE|WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-		CW_USEDEFAULT,	WIN_X, WIN_Y,	
-		NULL, NULL, hInstance, NULL);
-	if(!window) 
-	{
-		MessageBox(NULL, TEXT("Window creation failed.\n"), NULL, MB_ICONERROR);
-		return(1);
-	}		
+	bool timeGranularity = (timeBeginPeriod(1) == TIMERR_NOERROR);	
+	
+	HWND window = CreateMainWindow(hInstance);
 		
 	struct win32_thread_startup highPriorityStart[6] = {};
 	struct platform_work_queue highPriorityQueue = {};
@@ -938,12 +936,11 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	struct platform_work_queue lowPriorityQueue = {};
 	win32_MakeQueue(&lowPriorityQueue, ARRAY_COUNT(lowPriorityStart), lowPriorityStart);
 
-		
-	//LPVOID baseAddress = 0;
+
 	struct pub_memory memory = {};
 	memory.highPriorityQueue = &highPriorityQueue;
 	memory.lowPriorityQueue = &lowPriorityQueue;
-	//		Init platform api function pointers.
+	
 	memory.platformAPI.Alloc = win32_Alloc;
 	memory.platformAPI.DeAlloc = win32_DeAlloc;		
 	memory.platformAPI.AddEntry = win32_AddEntry;		
@@ -953,12 +950,11 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	memory.platformAPI.OpenNextFile = win32_OpenNextFile;		
 	memory.platformAPI.ReadDataFromFile = win32_ReadDataFromFile;		
 	memory.platformAPI.FileError = win32_FileError;		
-	
-	
+		
 	struct pub_input _input = {};
 	struct pub_input *input = &_input;
 	
-	uint64_t lastCounter = time_GetTime();		
+	LARGE_INTEGER lastCounter = win32_GetWallClock();			
 	
 	uint64_t pushBufferSize = MEGABYTES(64);	
 	struct platform_memory_block *pushBufferBlock = win32_Alloc(pushBufferSize, PLATFORM_NOTRESTORED);
@@ -975,8 +971,10 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	}															  
 	
 	platform = memory.platformAPI;
-	globalDC = GetDC(window);
-	globalHGLRC = win32_InitOpenGL(globalDC, &memory);
+	
+	HDC dc = GetDC(window);
+	globalHGLRC = win32_InitOpenGL(dc, &memory);
+	ReleaseDC(window, dc);
 	
 	ShowCursor(FALSE);
 	
@@ -993,18 +991,18 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 		commands.pushBase = pushBase;
 		commands.pushData = pushBase;
 		
-		struct rect_int drawRegion = IntToRect(0, 0, dim.x, dim.y);
-		render_AspectFit(commands.w, commands.h, dim.x, dim.y);									
+		struct rect_int drawRegion = 
+			render_AspectFit(commands.w, commands.h, dim.x, dim.y);									
 		
 		UpdateCursor(window, dim, input);
 		
 		win32_ProcessMessage(input);		
 		
 		pub_MainLoop(&memory, input, &commands);
-	
-		LimitFps(lastCounter);	
-		lastCounter = time_GetTime();
-
+		
+		LimitFps(lastCounter, timeGranularity);
+		lastCounter = win32_GetWallClock();
+				
 		BeginTicketMutex(&textureOpQueue->mutex);
 		struct texture_op *firstTextureOp = textureOpQueue->first;
 		struct texture_op *lastTextureOp = textureOpQueue->last;

@@ -1,20 +1,20 @@
 #pragma once
 
 enum interaction_types {
-	interactiondir_northull,
+	INTERACT_NULL,
+
+	INTERACT_TALK,
 	
-	interactiondir_northeuttalk,
-	
-	interaction_goodjoke,	
-	interaction_badjoke,
-	interaction_goodchat,	
-	interaction_badchat,	
-	interaction_goodflirt,	
-	interaction_badflirt,	
+	INTERACT_GOODJOKE,	
+	INTERACT_BADJOKE,
+	INTERACT_GOODCHAT,	
+	INTERACT_BADCHAT,	
+	INTERACT_GOODFLIRT,	
+	INTERACT_BADFLIRT,	
 };
 
 enum mod_types {
-	social_friend,
+	SOCIAL_FRIEND,
 	social_enemy,
 	social_spouse,
 	social_family,

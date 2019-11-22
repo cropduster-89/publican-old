@@ -8,34 +8,34 @@ __________     ___.   .__  .__
 		    
 *************************************************************************************/
 
-extern inline struct entity_char *GET_CHAR(struct entity *ent)
+static inline struct entity_char *GET_CHAR(struct entity *ent)
 {
 	return((struct entity_char *)ent->sub);
 }
 
-extern inline struct entity_furn *GET_FURN(struct entity *ent)
+static inline struct entity_furn *GET_FURN(struct entity *ent)
 {
 	return((struct entity_furn *)ent->sub);
 }
 
-extern inline struct entity_struc *GET_STRUC(struct entity *ent)
+static inline struct entity_struc *GET_STRUC(struct entity *ent)
 {
 	return((struct entity_struc *)ent->sub);
 }
 
-extern inline struct entity *GET_CHARBASE(struct world_mode *world,
+static inline struct entity *GET_CHARBASE(struct world_mode *world,
 					  struct entity_char *chara)
 {
 	return(&world->entities[chara->entIndex]);
 }
 
-extern inline struct entity *GET_FURNBASE(struct world_mode *world,
+static inline struct entity *GET_FURNBASE(struct world_mode *world,
 					  struct entity_furn *furn)
 {
 	return(&world->entities[furn->entIndex]);
 }
 
-extern inline struct entity *GET_STRUCBASE(struct world_mode *world,
+static inline struct entity *GET_STRUCBASE(struct world_mode *world,
 					    struct entity_struc *struc)
 {
 	return(&world->entities[struc->entIndex]);
@@ -47,55 +47,55 @@ struct entity_furn *: GET_FURNBASE, \
 struct entity_struc *: GET_STRUCBASE) ((a), (b))
 
 
-extern inline struct entity_char *GET_CHARFROMINDEX(struct world_mode *world,
+static inline struct entity_char *GET_CHARFROMINDEX(struct world_mode *world,
 					               int32_t i)
 {
 	return(&world->characters[i]);
 }
 
-extern inline struct entity_furn *GET_FURNFROMINDEX(struct world_mode *world,
+static inline struct entity_furn *GET_FURNFROMINDEX(struct world_mode *world,
 					               int32_t i)
 {
 	return(&world->furniture[i]);
 }
 
-extern inline struct entity_struc *GET_STRUCFROMENTINDEX(struct world_mode *world,
+static inline struct entity_struc *GET_STRUCFROMENTINDEX(struct world_mode *world,
 					               int32_t i)
 {
 	return(GET_STRUC(&world->entities[i]));
 }
 
-extern inline struct entity_furn *GET_FURNFROMENTINDEX(struct world_mode *world,
+static inline struct entity_furn *GET_FURNFROMENTINDEX(struct world_mode *world,
 					               int32_t i)
 {
 	return(GET_FURN(&world->entities[i]));
 }
 
-extern inline struct entity_char *GET_CHARFROMENTINDEX(struct world_mode *world,
+static inline struct entity_char *GET_CHARFROMENTINDEX(struct world_mode *world,
 					               int32_t i)
 {
 	return(GET_CHAR(&world->entities[i]));
 }
 
-extern inline struct entity *GET_FURNBASEFROMINDEX(struct world_mode *world,
+static inline struct entity *GET_FURNBASEFROMINDEX(struct world_mode *world,
 						   int32_t i)
 {
 	return(&world->entities[world->furniture[i].entIndex]);
 }
 
-extern inline struct entity_furn *GET_TARGETFURN(struct world_mode *world,
+static inline struct entity_furn *GET_TARGETFURN(struct world_mode *world,
 						 struct entity_char *chara)
 {
 	return((struct entity_furn *)chara->target.ent->sub);
 }
 
-extern inline struct entity *GET_TARGETFURNBASE(struct world_mode *world,
+static inline struct entity *GET_TARGETFURNBASE(struct world_mode *world,
 						struct entity_char *chara)
 {
 	return(GET_FURNBASE(world, (GET_TARGETFURN(world, chara))));
 }
 
-extern inline struct entity_char *GET_CHARACROSSBAR(struct world_mode *world,
+static inline struct entity_char *GET_CHARACROSSBAR(struct world_mode *world,
 					            struct entity_char *chara,
 						    int32_t slot)
 {
@@ -103,7 +103,7 @@ extern inline struct entity_char *GET_CHARACROSSBAR(struct world_mode *world,
 	return(GET_CHAR(GET_TARGETFURN(world, chara)->users[0].ent));
 }
 
-extern inline struct point3 GET_CHARCOORDS(struct world_mode *world,
+static inline struct point3 GET_CHARCOORDS(struct world_mode *world,
 					   struct entity_char *chara)
 {
 	struct point3 result =
@@ -116,7 +116,7 @@ extern inline struct point3 GET_CHARCOORDS(struct world_mode *world,
 *	Characters are in control of setting unsetting target,  
 *	furniture should never to it itself
 */
-extern inline void SET_TARGET(struct world_mode *world,
+static inline void SET_TARGET(struct world_mode *world,
 			      struct entity_char *chara,
 			      struct entity_furn *furn,			      
 			      uint8_t slot)
@@ -128,7 +128,7 @@ extern inline void SET_TARGET(struct world_mode *world,
 	furn->users[slot].ent = GET_CHARBASE(world, chara); 	
 }
 
-extern inline void UNSET_TARGET(struct world_mode *world,
+static inline void UNSET_TARGET(struct world_mode *world,
 				struct entity_char *chara)
 {
 	struct entity_target nullTarget = {};
@@ -136,7 +136,7 @@ extern inline void UNSET_TARGET(struct world_mode *world,
 	chara->target = nullTarget;	
 }
 
-extern inline void SET_FURNTARGET(struct world_mode *world,
+static inline void SET_FURNTARGET(struct world_mode *world,
 				  struct entity_furn *furnA,
 				  struct entity_furn *furnB,			      
 				  uint8_t slot)
@@ -148,12 +148,12 @@ extern inline void SET_FURNTARGET(struct world_mode *world,
 	furnB->users[1].slot = slot;	
 }
 
-extern inline struct entity_char *GET_SOCIALTARGET(struct entity_char *chara)
+static inline struct entity_char *GET_SOCIALTARGET(struct entity_char *chara)
 {
 	return(GET_CHAR(chara->socialTarget.ent));
 }	
 
-extern inline void SET_SOCIALTARGET(struct world_mode *world,
+static inline void SET_SOCIALTARGET(struct world_mode *world,
 					  struct entity_char *charaA,
 					  struct entity_char *charaB)
 {
@@ -163,20 +163,20 @@ extern inline void SET_SOCIALTARGET(struct world_mode *world,
 	charaB->socialTarget.ent = GET_CHARBASE(world, charaA);
 }	
 
-extern inline void UNSET_SOCIALTARGET(struct world_mode *world,
+static inline void UNSET_SOCIALTARGET(struct world_mode *world,
 				      struct entity_char *chara)
 {	
 	struct entity_target nullTarget = {};
 	struct action_time nullAction = {};	
-	GET_SOCIALTARGET(chara)->interaction = interactiondir_northull;
+	GET_SOCIALTARGET(chara)->interaction = INTERACT_NULL;
 	GET_SOCIALTARGET(chara)->socialTime = nullAction;
 	GET_SOCIALTARGET(chara)->socialTarget = nullTarget;
 	chara->socialTime = nullAction;	
 	chara->socialTarget = nullTarget;	
-	chara->interaction = interactiondir_northull;		
+	chara->interaction = INTERACT_NULL;
 }				  
 
-extern inline struct entity_char *GET_TARGETCHAR(struct entity_furn *table,
+static inline struct entity_char *GET_TARGETCHAR(struct entity_furn *table,
 						 int32_t slot)
 {
 	struct entity_furn *stool = GET_FURN(table->users[slot].ent);	
@@ -184,14 +184,14 @@ extern inline struct entity_char *GET_TARGETCHAR(struct entity_furn *table,
 	else return(NULL);
 }
 
-extern inline struct entity_furn *GET_TARGETTABLE(struct entity_char *chara)
+static inline struct entity_furn *GET_TARGETTABLE(struct entity_char *chara)
 {
 	struct entity_furn *test = GET_FURN(chara->target.ent);	
 	assert(test);
 	return(GET_FURN(test->users[1].ent));
 }
 
-extern inline int8_t CHARISMA(struct entity_char *chara)
+static inline int8_t CHARISMA(struct entity_char *chara)
 {
 	return(chara->stats.attribs.charisma);
 }
@@ -313,7 +313,7 @@ static inline void RemoveFromEnd(struct world_mode *world,
 	current->next = NULL;
 }
 
-extern inline void entity_RemoveFromList(struct world_mode *world,
+static inline void entity_RemoveFromList(struct world_mode *world,
 					 struct entity *current)
 {
 	if(current->next != NULL && current->prev != NULL) {
@@ -323,7 +323,7 @@ extern inline void entity_RemoveFromList(struct world_mode *world,
 	} else INVALID_PATH;
 }
 
-extern inline void entity_AddToList(struct world_mode *world,
+static inline void entity_AddToList(struct world_mode *world,
 				struct entity *new)
 {
 	if(!world->lastOnscreen) {
@@ -344,7 +344,7 @@ extern inline void entity_AddToList(struct world_mode *world,
 		
 
 */
-extern inline uint32_t entity_AddChar(struct world_mode *world, 
+static inline uint32_t entity_AddChar(struct world_mode *world, 
 				      uint32_t oldIndex)
 {
 	assert(world->charCount < ARRAY_COUNT(world->characters));
@@ -355,7 +355,7 @@ extern inline uint32_t entity_AddChar(struct world_mode *world,
 	return(index);
 }
 
-extern inline uint32_t entity_AddFurn(struct world_mode *world, 
+static inline uint32_t entity_AddFurn(struct world_mode *world, 
 				      uint32_t oldIndex)
 {
 	assert(world->furnCount < ARRAY_COUNT(world->furniture));
@@ -366,7 +366,7 @@ extern inline uint32_t entity_AddFurn(struct world_mode *world,
 	return(index);
 }
 
-extern inline uint32_t entity_AddStruc(struct world_mode *world, 
+static inline uint32_t entity_AddStruc(struct world_mode *world, 
 				       uint32_t oldIndex)
 {
 	assert(world->furnCount < ARRAY_COUNT(world->structures));
@@ -385,19 +385,19 @@ extern uint32_t entity_Add(struct world_mode *world,
 	uint32_t index = world->entityCount++;
 	
 	switch(type) {
-	case type_char: {
+	case ENTTYPE_CHAR: {
 		uint32_t subIndex = entity_AddChar(world, index);
 		world->entities[index].sub = &world->characters[subIndex];				
 		break;
-	} case type_struc: {
+	} case ENTTYPE_OBJ: {
 		uint32_t subIndex = entity_AddStruc(world, index);
 		world->entities[index].sub = &world->structures[subIndex];				
 		break;
-	} case type_furn: {
+	} case ENTTYPE_FURN: {
 		uint32_t subIndex = entity_AddFurn(world, index);
 		world->entities[index].sub = &world->furniture[subIndex];
 		break;
-	} case ETYPE_NULL: {
+	} case ENTTYPE_NULL: {
 		break;
 	} default: INVALID_PATH;	
 	}				
@@ -405,7 +405,7 @@ extern uint32_t entity_Add(struct world_mode *world,
 	return(index);
 }
 
-extern inline struct entity *entity_Get(struct world_mode *world,
+static inline struct entity *entity_Get(struct world_mode *world,
 					uint32_t index)
 {
 	struct entity *ent = 0;
@@ -445,7 +445,7 @@ static inline void entity_InitRotOffset(union vec3 *offset,
 	}
 }
 
-extern inline void entity_SetFacing(struct entity *ent,
+static inline void entity_SetFacing(struct entity *ent,
 				    int32_t rotation)
 {
 	ent->rotation = rotation;
@@ -457,7 +457,7 @@ static inline union vec3 entity_InitDim(struct entity *ent,
 {
 	union vec3 result = base->dim;
 	
-	if(ent->type != type_char) {
+	if(ent->type != ENTTYPE_CHAR) {
 		if(ent->rotation == 0 || ent->rotation == 2) {
 			result.x = base->dim.x;	 
 			result.y = base->dim.y;	 
@@ -530,7 +530,7 @@ extern void entity_InitStruc(struct world_mode *world,
 	struc->meshType = mesh;
 	//entity_InitRotOffset(&ent->offset, ent->rotation);
 	switch(alias) {	
-	case alias_floor: {
+	case ENTALIAS_FLOOR: {
 		ent->offset.z -= 0.1f;
 			
 		break;
@@ -560,10 +560,10 @@ extern void entity_InitFurn(struct world_mode *world,
 		furn->maxUsers = 2;
 		world->alerts.bars[world->alerts.barCount++] = ent;
 		break;
-	} case alias_table2x1: {
+	} case ENTALIAS_TABLE: {
 		furn->maxUsers = 4;								
 		break;
-	} case alias_stool: {
+	} case ENTALIAS_STOOL: {
 		furn->maxUsers = 2;
 		break;
 	} case alias_tiolet: {
@@ -602,7 +602,7 @@ extern struct entity_struc *entity_FindWallByPos(struct world_mode *world,
 	for(int32_t i = 0; i < world->strucCount; ++i) {	
 		struct entity_struc *test = &world->structures[i];
 		struct entity *base = ENT_BASE(world, test);
-		if(base->alias != alias_wall) {continue;}
+		if(base->alias != ENTALIAS_WALL) {continue;}
 		
 		struct point3 testPos = test->coords;
 		printf("found %d %d rot: %d\n", testPos.x, testPos.y, base->rotation);
@@ -752,8 +752,8 @@ extern void entity_Move(struct entity_char *chara,
 						   
 	}
 	
-	if(node->pathProgressC >= cardTot || 	
-	   node->pathProgressD >= diagTot) {		
+	if(node->pathProgressC > cardTot || 	
+	   node->pathProgressD > diagTot) {		
 		struct node_list *nodePtr = chara->currentNode;	
 		chara->currentNode = --nodePtr;							
 		--chara->pathLength;

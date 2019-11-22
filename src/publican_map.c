@@ -9,12 +9,21 @@ __________     ___.   .__  .__
 		    @nothing entity related
 *************************************************************************************/
 
+BUTTON_EVENT_CALLBACK(FloorUp)
+{
+	world->currentFloor++;
+}
+
+BUTTON_EVENT_CALLBACK(FloorDown)
+{
+	world->currentFloor--;
+}
 
 /*
 *		Utility functions for getting cardinal dirs
 *		in coordinates
 */
-extern inline struct point3 GET_N_COORD(struct point3 oldP,
+static inline struct point3 GET_N_COORD(struct point3 oldP,
 				        int32_t floorFlag)
 {
 	struct point3 newP = {
@@ -25,7 +34,7 @@ extern inline struct point3 GET_N_COORD(struct point3 oldP,
 	return(newP);
 }
 
-extern inline struct point3 GET_E_COORD(struct point3 oldP,
+static inline struct point3 GET_E_COORD(struct point3 oldP,
 				        int32_t floorFlag)
 {
 	struct point3 newP = {
@@ -36,7 +45,7 @@ extern inline struct point3 GET_E_COORD(struct point3 oldP,
 	return(newP);
 }
 
-extern inline struct point3 GET_S_COORD(struct point3 oldP,
+static inline struct point3 GET_S_COORD(struct point3 oldP,
 				        int32_t floorFlag)
 {
 	struct point3 newP = {
@@ -47,7 +56,7 @@ extern inline struct point3 GET_S_COORD(struct point3 oldP,
 	return(newP);
 }
 
-extern inline struct point3 GET_W_COORD(struct point3 oldP,
+static inline struct point3 GET_W_COORD(struct point3 oldP,
 				        int32_t floorFlag)
 {
 	struct point3 newP = {
@@ -58,7 +67,7 @@ extern inline struct point3 GET_W_COORD(struct point3 oldP,
 	return(newP);
 }
 
-extern inline struct point3 GET_NE_COORD(struct point3 oldP)
+static inline struct point3 GET_NE_COORD(struct point3 oldP)
 {
 	struct point3 newP = {
 		oldP.x + 1, 
@@ -68,7 +77,7 @@ extern inline struct point3 GET_NE_COORD(struct point3 oldP)
 	return(newP);
 }
 
-extern inline struct point3 GET_SE_COORD(struct point3 oldP)
+static inline struct point3 GET_SE_COORD(struct point3 oldP)
 {
 	struct point3 newP = {
 		oldP.x + 1, 
@@ -78,7 +87,7 @@ extern inline struct point3 GET_SE_COORD(struct point3 oldP)
 	return(newP);
 }
 
-extern inline struct point3 GET_SW_COORD(struct point3 oldP)
+static inline struct point3 GET_SW_COORD(struct point3 oldP)
 {
 	struct point3 newP = {
 		oldP.x - 1, 
@@ -88,7 +97,7 @@ extern inline struct point3 GET_SW_COORD(struct point3 oldP)
 	return(newP);
 }
 
-extern inline struct point3 GET_NW_COORD(struct point3 oldP)
+static inline struct point3 GET_NW_COORD(struct point3 oldP)
 {
 	struct point3 newP = {
 		oldP.x - 1, 
@@ -98,14 +107,14 @@ extern inline struct point3 GET_NW_COORD(struct point3 oldP)
 	return(newP);
 }
 
-extern inline bool tile_GetStepped(struct map_data *map,
+static inline bool tile_GetStepped(struct map_data *map,
 				   struct point3 p)
 {
 	return(map->tiles[(p.z * (map->sizeX * map->sizeY))
 		+ p.y * map->sizeX + p.x].stepped);
 }
 
-extern inline void tile_SetStepped(struct map_data *map,
+static inline void tile_SetStepped(struct map_data *map,
 				  struct point3 p,
 				  bool val)
 {
@@ -113,14 +122,14 @@ extern inline void tile_SetStepped(struct map_data *map,
 		+ p.y * map->sizeX + p.x].stepped = val;	
 }
 
-extern inline struct step_data tile_GetStepData(struct map_data *map,
+static inline struct step_data tile_GetStepData(struct map_data *map,
 						struct point3 p)
 {
 	return(map->tiles[(p.z * (map->sizeX * map->sizeY))
 		+ p.y * map->sizeX + p.x].stepData);
 }
 
-extern inline void tile_SetStepData(struct map_data *map,
+static inline void tile_SetStepData(struct map_data *map,
 				    struct point3 p,
 				    struct step_data newData)
 {
@@ -128,14 +137,14 @@ extern inline void tile_SetStepData(struct map_data *map,
 		p.y * map->sizeX + p.x].stepData = newData;	
 }
 
-extern inline int32_t tile_GetWalled(struct map_data *map,
+static inline int32_t tile_GetWalled(struct map_data *map,
 				     struct point3 p)
 {
 	return(map->tiles[(p.z * (map->sizeX * map->sizeY)) + 
 		p.y * map->sizeX + p.x].walled);		
 }
 
-extern inline void tile_SetWalled(struct map_data *map,
+static inline void tile_SetWalled(struct map_data *map,
 			    	  struct point3 p,	
 			    	  int32_t val)
 {
@@ -143,7 +152,7 @@ extern inline void tile_SetWalled(struct map_data *map,
 		p.y * map->sizeX + p.x].walled = val;	
 }
 
-extern inline struct tile_data tile_GetTile(struct map_data *map,
+static inline struct tile_data tile_GetTile(struct map_data *map,
 					   struct point3 p)
 {
 	
@@ -151,14 +160,14 @@ extern inline struct tile_data tile_GetTile(struct map_data *map,
 		p.y * map->sizeX + p.x]);		
 }
 
-extern inline struct tile_data *tile_GetTilePtr(struct map_data *map,
+static inline struct tile_data *tile_GetTilePtr(struct map_data *map,
 						struct point3 p)
 {
 	return(&map->tiles[(p.z * (map->sizeX * map->sizeY)) + 
 		p.y * map->sizeX + p.x]);		
 }
 
-extern inline int32_t tile_GetElevation(struct map_data *map,
+static inline int32_t tile_GetElevation(struct map_data *map,
 					struct point3 p)
 {
 	if(p.x < 0) p.x = 0;
@@ -168,7 +177,7 @@ extern inline int32_t tile_GetElevation(struct map_data *map,
 		p.y * map->sizeX + p.x].elevation);		
 }
 
-extern inline void tile_SetElevation(struct map_data *map,
+static inline void tile_SetElevation(struct map_data *map,
 	         		     struct point3 p,	
 				     int32_t val)
 {
@@ -179,7 +188,7 @@ extern inline void tile_SetElevation(struct map_data *map,
 		p.y * map->sizeX + p.x].elevation = val;	
 }
 
-extern inline float tile_GetElevationOffset(struct map_data *map,
+static inline float tile_GetElevationOffset(struct map_data *map,
 					    struct point3 p)
 {
 	float result = 0;	
@@ -198,14 +207,14 @@ extern inline float tile_GetElevationOffset(struct map_data *map,
 	return(result);
 }
 
-extern inline int32_t tile_GetPass(struct map_data *map,
+static inline int32_t tile_GetPass(struct map_data *map,
 				   struct point3 p)
 {
 	return(map->tiles[(p.z * (map->sizeX * map->sizeY)) + 
 		p.y * map->sizeX + p.x].impassable);		
 }
 
-extern inline void tile_SetPass(struct map_data *map,
+static inline void tile_SetPass(struct map_data *map,
 			        struct point3 p,
 			        int32_t val)
 {

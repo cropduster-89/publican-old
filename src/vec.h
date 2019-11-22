@@ -365,14 +365,28 @@ extern inline float Magnitude(union vec3 a)
 #define FORWARD_VEC (MouseForwardVector())
 extern inline union vec3 MouseForwardVector(void)
 {
-	union vec3 result = {.x = 1, .y = 1, .z = -0.815 };
+	union vec3 result = {.x = 1, .y = 1, .z = -0.816};
 	return(result);
 }
 
 #define BACKWARD_VEC (MouseBackwardVector())
 extern inline union vec3 MouseBackwardVector(void)
 {
-	union vec3 result = {.x = -1, .y = -1, .z = 0.815 };
+	union vec3 result = {.x = -1, .y = -1, .z = 0.816 };
+	return(result);
+}
+
+#define FORWARD_VEC_HALF (MouseForwardVectorHalf())
+extern inline union vec3 MouseForwardVectorHalf(void)
+{
+	union vec3 result = {.x = 0.5f, .y = 0.5f, .z = -0.408 };
+	return(result);
+}
+
+#define BACKWARD_VEC_HALF (MouseBackwardVectorHalf())
+extern inline union vec3 MouseBackwardVectorHalf(void)
+{
+	union vec3 result = {.x = -0.5f, .y = -0.5f, .z = 0.408 };
 	return(result);
 }
 
@@ -896,7 +910,7 @@ extern union vec3 GetRow(struct mat4 a,
 	return(r);
 }
 
-static struct mat4 Translate(struct mat4 a,  
+extern inline struct mat4 Translate(struct mat4 a,  
 			     union vec3 b)
 {
 		struct mat4 r = a;
@@ -1032,7 +1046,7 @@ extern inline void _BITTOGGLE_S16(int16_t *a,
 }
 
 extern inline void _BITTOGGLE_S32(int32_t *a,
-			      int32_t n)
+			          int32_t n)
 {
 	assert(n < sizeof(int32_t) * 8);
 	*a ^= (1 << n);
@@ -1185,8 +1199,7 @@ uint64_t : _BITSET_U64, \
 int8_t : _BITSET_S8, \
 int16_t : _BITSET_S16, \
 int32_t : _BITSET_S32, \
-int64_t : _BITSET_S64, \
-default : INVALID_PATH)  ((&a), (n))
+int64_t : _BITSET_S64)  ((&a), (n))
 
 extern inline bool _BITCHECK_U8(uint8_t a,
 			     int32_t n)

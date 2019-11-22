@@ -16,7 +16,7 @@ struct temp_memory {
 
 #define ZERO_STRUCT(instance) ZeroSize_(sizeof(instance), &(instance))
 #define ZERO_ARRAY(count, ptr) ZeroSize_(count * sizeof((ptr)[0]), ptr)
-extern inline void ZeroSize_(size_t size, void *ptr)
+static inline void ZeroSize_(size_t size, void *ptr)
 {
 	uint8_t *byte = (uint8_t *)ptr;
 	while(size--) {
@@ -30,7 +30,7 @@ struct arena_push_params {
 };
 
 static inline size_t GetAlignOffset(struct memory_arena *arena,
-									size_t align)
+				    size_t align)
 {
 	size_t alignOffset = 0;
 	
@@ -59,8 +59,8 @@ struct arena_boot_params {
 #define DEF_BOOT (DefaultBootParams_())
 extern struct arena_boot_params DefaultBootParams_(void)
 {
-		struct arena_boot_params params = {};
-		return(params);
+	struct arena_boot_params params = {};
+	return(params);
 }
 
 #define PUSH_STRUCT(arena, type, params) \
@@ -71,10 +71,9 @@ extern struct arena_boot_params DefaultBootParams_(void)
 		PushSize_(arena, size, params)
 #define PUSH_COPY(arena, size, source, params) \
 		Copy_(size, source, PushSize_(arena, size), params)
-
-static inline size_t GetEffectiveSizeFor(struct memory_arena 		*arena,
-					 size_t 			sizeInit,
-					 struct arena_push_params	params)
+static inline size_t GetEffectiveSizeFor(struct memory_arena *arena,
+					 size_t sizeInit,
+					 struct arena_push_params params)
 {
 	size_t size = sizeInit;
 	
@@ -84,7 +83,7 @@ static inline size_t GetEffectiveSizeFor(struct memory_arena 		*arena,
 	return(size);
 }	
 	
-extern inline void *PushSize_(struct memory_arena 	*arena,
+static inline void *PushSize_(struct memory_arena 	*arena,
 			      size_t 			sizeInit,
 			      struct arena_push_params 	params)
 {
@@ -123,19 +122,19 @@ extern inline void *PushSize_(struct memory_arena 	*arena,
 	return(result);
 }
 
-extern inline void *Copy(size_t size,
+static inline void *Copy(size_t size,
 			 void 	*sourceInit,
 			 void	*destInit)
 {
 		uint8_t *source = (uint8_t *)sourceInit;
 		uint8_t *dest = (uint8_t *)destInit;
 		while(size--) {
-				*dest++ = *source++;
+			*dest++ = *source++;
 		}
 		return(destInit);
 }
 
-extern inline struct temp_memory BeginTempMem(struct memory_arena *arena)
+static inline struct temp_memory BeginTempMem(struct memory_arena *arena)
 {
 		struct temp_memory result;
 		
@@ -148,41 +147,42 @@ extern inline struct temp_memory BeginTempMem(struct memory_arena *arena)
 		return(result);	
 }
 
-extern inline void FreeLastBlock(struct memory_arena *arena)
+static inline void FreeLastBlock(struct memory_arena *arena)
 {
 		struct platform_memory_block *free = arena->currentBlock;
 		arena->currentBlock = free->arenaPrev;
 		platform.DeAlloc(free);
 }
 
-extern inline void EndTempMem(struct temp_memory temp)
+static inline void EndTempMem(struct temp_memory temp)
 {
-		struct memory_arena *arena = temp.arena;
-		while(arena->currentBlock != temp.block) {
-			FreeLastBlock(arena);
-			printf("blobk freed\n");
-		}
-		if(arena->currentBlock) {
-			assert(arena->currentBlock->used >= temp.used);
-			arena->currentBlock->used = temp.used;
-			assert(arena->tempCount > 0);
-		}	
-		--arena->tempCount;
+	struct memory_arena *arena = temp.arena;
+	while(arena->currentBlock != temp.block) 
+	{
+		FreeLastBlock(arena);		
+	}
+	if(arena->currentBlock) 
+	{
+		assert(arena->currentBlock->used >= temp.used);
+		arena->currentBlock->used = temp.used;
+		assert(arena->tempCount > 0);
+	}	
+	--arena->tempCount;
 }
 
-extern inline void CheckArena(struct memory_arena *arena)
+static inline void CheckArena(struct memory_arena *arena)
 {
 		assert(arena->tempCount == 0);
 }
 
-extern inline struct arena_boot_params NonRestoredArena(void)
+static inline struct arena_boot_params NonRestoredArena(void)
 {
 		struct arena_boot_params params = DEF_BOOT;
 		params.allocationFlags = PLATFORM_NOTRESTORED;
 		return(params);
 }
 
-extern inline struct arena_push_params NoClear(void)
+static inline struct arena_push_params NoClear(void)
 {
 		struct arena_push_params params = DEF_PUSH;
 		params.flags &= ~0x1;
@@ -191,10 +191,10 @@ extern inline struct arena_push_params NoClear(void)
 
 #define BootStrapPushSize(type, member, bootparams, pushparams) \
 	(type *)BootStrapPushSize_(sizeof(type), OffsetOf(type, member), bootparams, pushparams)
-extern inline void *BootStrapPushSize_(uintptr_t structSize,
-									   uintptr_t offsetToArena,
-									   struct arena_boot_params bootParams,
-									   struct arena_push_params pushParams)
+static inline void *BootStrapPushSize_(uintptr_t structSize,
+				       uintptr_t offsetToArena,
+				       struct arena_boot_params bootParams,
+				       struct arena_push_params pushParams)
 {
 		struct memory_arena bootstrap = {};
 		

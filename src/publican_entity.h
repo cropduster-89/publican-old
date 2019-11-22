@@ -1,19 +1,19 @@
 #pragma once
 
 enum entity_type {
-	ETYPE_NULL,
-	type_char,
-	type_struc,
-	type_furn		
+	ENTTYPE_NULL,
+	ENTTYPE_CHAR,
+	ENTTYPE_OBJ,
+	ENTTYPE_FURN		
 };
 
 enum entity_alias {
-	aliasdir_northull,
-	alias_floor,
-	alias_support,	
-	alias_stool,
-	alias_table2x1,
-	alias_wall,
+	ENTALIAS_NULL,
+	ENTALIAS_FLOOR,
+	ENTALIAS_SUPPORT,	
+	ENTALIAS_STOOL,
+	ENTALIAS_TABLE,
+	ENTALIAS_WALL,
 	alias_door,
 	alias_pillar,
 	alias_bar,
@@ -110,25 +110,25 @@ struct entity {
 
 struct entity_store entStore[] = {		
 
-	{{.x = 1.0f, .y = 1.0f, .z = 0.1f}, alias_floor},
+	{{.x = 1.0f, .y = 1.0f, .z = 0.1f}, ENTALIAS_FLOOR},
 		 
 	{{.x = 1.0f, .y = 1.0f, .z = 1.0f}, alias_steps},	 
 	
 	{{.x = 1.0f, .y = 1.0f, .z = 1.0f}, alias_bigsteps},
 	
-	{{.x = 1.0f, .y = 1.0f, .z = 1.0f}, alias_support},
+	{{.x = 1.0f, .y = 1.0f, .z = 1.0f}, ENTALIAS_SUPPORT},
 	
 	{{.x = 1.0f, .y = 1.0f, .z = 3.0f}, alias_char},
 		
-	{{.x = 1.0f, .y = 4.0f, .z = 0.1f}, alias_wall},
+	{{.x = 1.0f, .y = 4.0f, .z = 0.1f}, ENTALIAS_WALL},
 	
 	{{.x = 3.0f, .y = 4.0f, .z = 0.1f}, alias_door},
 	
 	{{.x = 0.2f, .y = 0.2f, .z = 4.0f}, alias_pillar},
 		
-	{{.x = 0.8f, .y = 0.8f, .z = 1.0f}, alias_stool},
+	{{.x = 0.8f, .y = 0.8f, .z = 1.0f}, ENTALIAS_STOOL},
 	
-	{{.x = 2.0f, .y = 1.2f, .z = 1.0f}, alias_table2x1},
+	{{.x = 2.0f, .y = 1.2f, .z = 1.0f}, ENTALIAS_TABLE},
 		
 	{{.x = 1.0f, .y = 1.0f, .z = 1.0f}, alias_tiolet},	
 		

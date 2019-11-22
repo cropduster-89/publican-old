@@ -10,14 +10,14 @@
 #define U32FromPointer(Pointer) ((uint32_t)(size_t)(Pointer))
 #define PointerFromU32(type, Value) (type *)((size_t)Value)
 
-extern inline uint32_t SafeTruncateUInt64(uint64_t a)
+static inline uint32_t SafeTruncateUInt64(uint64_t a)
 {
 	assert(a <= 0xFFFFFFFF);
 	uint32_t result = (uint32_t)a;
 	return(result);
 }
 
-extern inline uint16_t SafeTruncateUInt16(uint32_t a)
+static inline uint16_t SafeTruncateUInt16(uint32_t a)
 {
 	assert(a <= 0xFFFF);
 	uint16_t result = (uint16_t)a;
@@ -206,7 +206,7 @@ struct pub_memory *debugMemory;
 #define TIMED_END(id)
 #endif
 
-extern inline uint32_t GetThreadID(void)
+static inline uint32_t GetThreadID(void)
 {
     uint8_t *ThreadLocalStorage = (uint8_t *)__readgsqword(0x30);
     uint32_t ThreadID = *(uint32_t *)(ThreadLocalStorage + 0x48);
@@ -214,7 +214,7 @@ extern inline uint32_t GetThreadID(void)
     return(ThreadID);
 }
 
-extern inline uint32_t AtomicCompareExchangeUInt32(uint32_t volatile *val,
+static inline uint32_t AtomicCompareExchangeUInt32(uint32_t volatile *val,
 						   uint32_t input,
 						   uint32_t expected)
 {
@@ -223,20 +223,20 @@ extern inline uint32_t AtomicCompareExchangeUInt32(uint32_t volatile *val,
 	return(result);													
 }
 	
-extern inline uint64_t AtomicAddU64(uint64_t volatile *a,
+static inline uint64_t AtomicAddU64(uint64_t volatile *a,
 		        	    uint64_t b)
 {
 	uint64_t result = __sync_fetch_and_add(a, b);
 	return(result);
 }
 
-extern inline void BeginTicketMutex(struct ticket_mutex *mutex)
+static inline void BeginTicketMutex(struct ticket_mutex *mutex)
 {
 	uint64_t ticket = AtomicAddU64(&mutex->ticket, 1);
 	while(ticket != mutex->serving) {_mm_pause();}
 }
 
-extern inline void EndTicketMutex(struct ticket_mutex *mutex)
+static inline void EndTicketMutex(struct ticket_mutex *mutex)
 {
 	AtomicAddU64(&mutex->serving, 1);
 }

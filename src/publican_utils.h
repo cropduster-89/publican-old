@@ -1,12 +1,12 @@
 #pragma once
 
-extern inline bool IsLineEnd(char c)
+static inline bool IsLineEnd(char c)
 {
 	bool result = ((c == '\n') || (c == '\r'));
 	return(result);
 }
 
-extern inline bool IsWhitespace(char c)
+static inline bool IsWhitespace(char c)
 {
 	bool result = ((c == ' ') || (c == '\t') ||
 		      (c == '\v') || (c == '\f') ||
@@ -14,7 +14,7 @@ extern inline bool IsWhitespace(char c)
 	return(result);
 }
 
-extern inline bool StringsAreEqual(uintptr_t length, 
+static inline bool StringsAreEqual(uintptr_t length, 
 				   char *a,
 				   char *b)
 {

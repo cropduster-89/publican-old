@@ -1,5 +1,5 @@
 /*************************************************************************************************
-		OpenGL Specidic Code
+		OpenGL Specific Code
 *************************************************************************************************/
 
 static uint32_t globalFrameBufferCount = 0;
@@ -56,8 +56,6 @@ static GLuint globalFrameBufferTexture[256] = {0};
 
 #define GL_UNSIGNED_INT_8_8_8_8           0x8035
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
-
-
 
 enum render_program {
 	render_program_mesh,
@@ -256,23 +254,23 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"#version 450 core							\n"
 		"layout (location = 0) in vec3 inPos;					\n"
 		"layout (location = 1) in vec3 inNormal;				\n"
-		"layout (location = 2) in vec2 inUV;				\n"		
+		"layout (location = 2) in vec2 inUV;					\n"		
 		"layout (location = 3) in int inArrayID;				\n"
-		"layout (location = 4) in mat4 model;									\n"
+		"layout (location = 4) in mat4 model;					\n"
 		"									\n"
-		"out vec2 uv;							\n"
+		"out vec2 uv;								\n"
 		"out vec3 normal;							\n"
 		"out vec3 pos;								\n"		
 		"flat out int arrayID;							\n"		
 		"									\n"
-		"layout (location = 1) uniform mat4 proj; "
+		"layout (location = 1) uniform mat4 proj; 				\n"
 		"uniform vec3 canonPos;							\n"		
 		"									\n"
 		"void main(void) {							\n"
-		"	gl_Position = proj * model * vec4(inPos, 1.0f);		\n"
+		"	gl_Position = proj * model * vec4(inPos, 1.0f);			\n"
 		"	pos = (model * gl_Position).xyz;							\n"
-		"	arrayID = inArrayID;							\n"
-		"	uv = inUV;			\n"			
+		"	arrayID = inArrayID;						\n"
+		"	uv = inUV;							\n"			
 		"	normal = (model * vec4(inNormal, 0.0f)).xyz;			\n"			
 		"}									\n"
 	};
@@ -281,10 +279,10 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"#version 450 core							\n"
 		"out vec4 fragColour;							\n"
 		"									\n"
-		"in vec2 uv;							\n"
+		"in vec2 uv;								\n"
 		"in vec3 normal;							\n"
 		"in vec3 pos;								\n"
-		"flat in int arrayID;								\n"
+		"flat in int arrayID;							\n"
 		"									\n"
 		"layout (location = 0) uniform sampler2DArray texture1;						\n"
 		"uniform vec3 mouseP;							\n"
@@ -300,12 +298,9 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"	vec3 lightCol = vec3(1, 0.95, 0.8);				\n"
 		"									\n"
 		"	float diff = max(dot(norm, lightDir), 0.0);			\n"
-		"	vec3 diffuse = (diff * lightCol) * stren;			\n"
+		"	vec3 diffuse = (diff * lightCol) * stren;			\n"		
 		"									\n"
-		"									\n"
-		"									\n"
-		"									\n"
-		"	fragColour = texture(texture1, vec3(uv, arrayID));			\n"
+		"	fragColour = texture(texture1, vec3(uv, arrayID));		\n"
 		"	vec3 result = (ambientLight + diffuse); 			\n"
 		"									\n"
 		"									\n"
@@ -438,7 +433,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 	return(info);	
 }
 
-extern inline float SafeRatioN(float num, float div, float n)
+static inline float SafeRatioN(float num, float div, float n)
 {
 	float result = n;
 	if(div != 0.0f) {
@@ -447,13 +442,13 @@ extern inline float SafeRatioN(float num, float div, float n)
 	return(result);
 }
 
-extern inline float SafeRatio1(float num, float div)
+static inline float SafeRatio1(float num, float div)
 {
 	float result = SafeRatioN(num, div, 1.0f);
 	return(result);
 }
 
-extern inline float SafeRatio0(float num, float div)
+static inline float SafeRatio0(float num, float div)
 {
 	float result = SafeRatioN(num, div, 0.0f);
 	return(result);
@@ -605,9 +600,7 @@ extern void gl_Output(struct render_commands *commands,
 	
 	//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_BACK);		
-			
-	
-		
+					
 	bool useRenderTargets = (glBindFramebuffer != 0);
 	assert(useRenderTargets);
 	uint32_t maxRenderTargets = commands->maxRenderTargetIndex;	
@@ -743,8 +736,7 @@ extern void gl_Output(struct render_commands *commands,
 				break;
 				
 			} case entry_rect: {		
-				headerAt += sizeof(struct render_entry_rect);	
-				
+				headerAt += sizeof(struct render_entry_rect);					
 				
 				struct render_entry_rect *entry = (struct render_entry_rect *)data;
 				assert(entry);
@@ -929,8 +921,9 @@ extern void gl_Output(struct render_commands *commands,
 				
 				break;
 				
-			} case entry_mesh: {		
-				
+			} 
+			case entry_mesh: 
+			{				
 				headerAt += sizeof(struct render_entry_mesh);
 				if(glRuntime.rState->meshCount == MAX_MESHCOMMAND - 1) break;
 				struct render_entry_mesh *entry = (struct render_entry_mesh *)data;								
@@ -974,7 +967,8 @@ extern void gl_Output(struct render_commands *commands,
 				assert(!gl_GetError());					
 				glRuntime.rState->meshCount++;
 				break;					
-			} default: INVALID_PATH;
+			} 
+			default: INVALID_PATH;
 			}	
 		}							
 	}	

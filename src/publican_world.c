@@ -8,43 +8,6 @@ __________     ___.   .__  .__
 		    @Always adding stuff, never cleaning stuff	
 *************************************************************************************/
 
-#define TILE_DIM_METRES 1.0f
-
-static struct entity *DEBUG_CharSelect(struct world_mode *world)
-{
-	struct entity *result = NULL;
-		
-	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) {
-		
-		if(ent->type == ETYPE_NULL || ent->type == type_struc) {continue;}			
-		
-		for(int32_t i = 4; i >= ent->bound.t.max.z; --i) {
-			if(
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.t.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.t.max)) ||
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.n.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.n.max)) ||
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.e.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.e.max)) ||
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.s.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.s.max)) ||
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.w.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.w.max)) ||
-			 (MoreThanVec3(world->mouseCoords[i], ent->bound.b.min) &&
-			 LessThanVec3(world->mouseCoords[i], ent->bound.b.max))) {	
-			 
-				if(ent == world->mouseOverEnt.ent ||
-				   ent == world->selectedEnt.ent) {continue;}
-				   
-				result = ent;
-				break;
-			}
-		}			
-		if(result) {break;}		
-	}
-	return(result);
-}
-
 static void CheckGlobalBars(struct world_mode *world)
 {
 	for(int32_t i = 0; i < world->alerts.barCount; ++i) {
@@ -63,79 +26,80 @@ static void CheckGlobalBars(struct world_mode *world)
 	world->alerts.serveAlert = false;
 }
 
-
-
+static inline bool IsWithinBounds(struct cube3 box,
+				  union vec3 testRay)
+{
+		
+	return((testRay.z > box.b.min.z) &&
+	       (testRay.z < box.t.max.z) &&
+	       (testRay.y < box.n.max.y) &&
+	       (testRay.y > box.s.min.y) &&
+	       (testRay.x > box.w.min.x) &&
+	       (testRay.x < box.e.max.x));
+}
 /*
-extern inline int8_t asset_GetBMPKern(struct game_assets *assets,
-									  uint32_t id,
-									  uint32_t offset)
-{
-		struct pfile_bmp bmp = assets->assets[id].bmp;
-		int8_t result = bmp.kerning[offset - 33];
-		return(result);
-}
+*	loops through onscreen entities, and performs
+*	ray intersection test
 */
-
-extern inline union vec4 ScaleV4(union vec4 v, float s) 
+static void SelectionTest(struct world_mode *world,
+			  union vec3 testRay)
 {
-
-	v.x = v.x * s;
-	v.y = v.y * s;
-	v.z = v.z * s;
-	v.w = v.w * s;
-	
-	return(v);
+	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) 
+	{		
+		if(ent->type == ENTTYPE_NULL || ent->type == ENTTYPE_OBJ) {continue;}			
+		else if(IsWithinBounds(ent->bound, testRay)) 
+		{			 
+			if(ent == world->mouseOverEnt.ent ||
+			   ent == world->selectedEnt.ent) {continue;}
+			   
+			world->mouseOverEnt.ent = ent;
+			world->mouseOverEnt.targetId = ent->index;	
+			
+			return;
+		}		
+	}	
+	world->mouseOverEnt.ent = NULL;
+	world->mouseOverEnt.targetId = 0;
 }
-	
 
-extern inline void world_GetMouseCoords(struct pub_input *input,
-					struct render_group *group,
-					struct world_mode *world)
+extern  void world_GetMouseCoords(struct pub_input *const input,
+				  struct render_group *const group,
+				  struct world_mode *const world)
 {		
 	union vec4 mousePosF = Unproject(group, 
 		RealToVec2(input->mouseX, input->mouseY), 0);
 	union vec4 mousePosN = Unproject(group, 
 		RealToVec2(input->mouseX, input->mouseY), 2);			
-	union vec4 mouseVector = SUBVEC(mousePosF, mousePosN);	
+	union vec4 mouseVector = SUBVEC(mousePosF, mousePosN);		
+	union vec3 testVec = ADDVEC(mouseVector.xyz, 
+		MULTVEC(BACKWARD_VEC, 10));	
 	
-	union vec3 testVec = ADDVEC(mouseVector.xyz, RealToVec3(1, 1, -0.815));
+	union vec3 baseVector = AddVec3(testVec, world->cam.pos);
+	union vec3 forwardVector = AddVec3(testVec, world->cam.pos);	
 	
-	world->mouseRay[0] = Normalise(mouseVector.xyz);
-	world->mouseCoords[0] = AddVec3(world->mouseRay[0], world->cam.pos);
-	
-	//world->mouseRayBase = Normalise(world->mouseRay[0]);	
-	//DEBUG_RayFollow(world, ADDVEC(world->mouseRayBase, world->cam.pos));
-	render_PushCube(group, mouseVector.xyz, 0.05f, 0.1f, 0xFF0000FF);	
-	render_PushCube(group, testVec, 0.05f, 0.1f, 0xFFFFFFFF);	
-	
-	
-	
-	//float z = 0;	
-	//if(world->mouseRay[0].z >= 4) {
-	//	z = 0;
-	//} else if(world->mouseRay[0].z < 0) {
-	//	z = 0;
-	//}
-	//
-	//float angle1 = -world->cam.pitch;
-	//float angle2 = world->cam.orbit;	
-	//	
-	//for(int32_t i = 0; i < ARRAY_COUNT(world->mouseCoords); ++i) {
-	//	float groundLen = (((world->mouseRay[0].z - (world->currentFloor)) - 
-	//		(0.4f * i))- z) / sin(angle2) * sin(angle1);
-	//	
-	//	
-	//	union vec3 newPos = {		
-	//		.x = world->mouseRay[0].x + groundLen,
-	//		.y = world->mouseRay[0].y + groundLen,
-	//		.z = (float)i * 0.5,		
-	//	};	
-	//	world->mouseRay[i] = newPos;	
-	//	world->mouseCoords[i] = AddVec3(newPos, world->cam.pos);
-	//
-	//
-	//}
-			
+	float floorCap = BACKWARD_VEC_HALF.z;
+#define MAX_MOUSE_DISTANCE 180
+	for(int32_t i = 0; i < MAX_MOUSE_DISTANCE; ++i)
+	{
+		forwardVector = ADDVEC(baseVector, MULTVEC(FORWARD_VEC_HALF, i));
+		SelectionTest(world, forwardVector);	
+		if(forwardVector.z < floorCap) 
+		{	
+			float remainder = forwardVector.z / floorCap;				
+			world->mouseCoords[0] = ADDVEC(forwardVector, 
+				MULTVEC(FORWARD_VEC_HALF, remainder));
+			world->mouseRay[0] = SUBVEC(world->mouseCoords[0],
+				world->cam.pos);	
+			break;
+		}
+#ifdef DEBUG 
+		else if(forwardVector.z > floorCap && i == MAX_MOUSE_DISTANCE - 1)
+		{
+			printf("Mouse ray not extended enough!\n");
+			INVALID_PATH;
+		}
+#endif		
+	}					
 }
 
 static inline uint32_t world_GetMouseElev(struct world_mode *world)
@@ -219,24 +183,12 @@ static void world_Control(struct world_mode *world,
 			  struct pub_input *input,
 			  struct loaded_bmp drawBuffer)
 {		
-	if(!ui_Process(world, false)) {
 	
-		world->mouseOverEnt.ent = DEBUG_CharSelect(world);
-		if(!world->mouseOverEnt.ent) {
-			world->mouseOverEnt.targetId = 0;
-		} else {
-			world->mouseOverEnt.targetId = world->mouseOverEnt.ent->index;
-		}	
-		UpdateCamera(&world->cam, input, drawBuffer);
-	}
-	
+	UpdateCamera(&world->cam, input, drawBuffer);		
 	
 	if(input->buttons.lClick.endedDown) {
-		if(ui_Process(world, true)) {
-			input->buttons.lClick.endedDown = 0;			
-			return;
-		} else if(world->edit.editorOpen && world->edit.current.ent != NULL) {
-			if(world->edit.current.ent->alias == alias_wall) {
+		if(world->edit.editorOpen && world->edit.current.ent != NULL) {
+			if(world->edit.current.ent->alias == ENTALIAS_WALL) {
 				world->edit.wallsInit = false;
 				edit_WallPlace(world);
 				world->edit.newAnchor = 0;
@@ -257,25 +209,8 @@ static void world_Control(struct world_mode *world,
 				input->buttons.lClick.endedDown = 0;
 				return;
 			}			
-		} else if(world->mouseOverEnt.ent) {
-			world->selectedEnt = world->mouseOverEnt;
-			input->buttons.lClick.endedDown = 0;
-			
-			if(world->selectedEnt.ent->type == type_char) {
-				ui_OpenPanel(world, panel_char);				
-			} else if(world->selectedEnt.ent->type == type_furn) {
-				ui_OpenPanel(world, panel_furn);
-			}
-			
-			return;
-		} else {
-			world->selectedEnt.ent = NULL;
-			world->selectedEnt.targetId = 0;
-			ui_OpenPanel(world, panel_count);
-		}
-		input->buttons.lClick.endedDown = 0;		
-	}
-	
+		} 	
+	}	
 }
 
 static inline void pub_RenderLimits(struct world_mode *world)
@@ -313,8 +248,8 @@ static inline void pub_RenderLimits(struct world_mode *world)
 static void worlddir_northewCharFromFile(struct chara_stats *stats, 
 				  struct loaded_char *chara)
 {
-	strcpy(stats->firstName, chara->firstName);	
-	strcpy(stats->lastName, chara->lastName);		
+	strcpy_s(stats->firstName, 32, chara->firstName);	
+	strcpy_s(stats->lastName, 32, chara->lastName);		
 	stats->race = chara->race;
 	stats->dress = chara->dress;		
 	stats->hair = chara->hair;	
@@ -331,10 +266,12 @@ static void world_StartWorld(struct game_state *state)
 	state->worldMode = PUSH_STRUCT(&state->modeArena, struct world_mode, DEF_PUSH);
 	struct world_mode *world = state->worldMode;	
 #if 0
-	FILE *handle1 = fopen("world", "rb");
+	FILE *handle1;
+	fopen_s(&handle1, "world", "rb");
 	if(!handle1) {printf("world read fialed\n");}	
 	
-	FILE *handle2 = fopen("tile", "rb");
+	FILE *handle2;
+	fopen_s(&handle2, "tile", "rb");
 	if(!handle2) {printf("tile read fialed\n");}	
 	
 	if(!fread(world, sizeof(struct world_mode), 1, handle1)) {
@@ -377,7 +314,7 @@ static void world_StartWorld(struct game_state *state)
 	map->tiles = PUSH_ARRAY(&state->modeArena, map->sizeX * map->sizeY * map->sizeZ,
 						          struct tile_data, DEF_PUSH);
 	
-	uint32_t index = entity_Add(world, ETYPE_NULL);
+	uint32_t index = entity_Add(world, ENTTYPE_NULL);
 	for(int32_t z = 0; z < map->sizeZ; ++z) {	
 	for(int32_t y = 0; y < map->sizeY; ++y) {
 	for(int32_t x = 0; x < map->sizeX; ++x) {	
@@ -397,17 +334,17 @@ static void world_StartWorld(struct game_state *state)
 			tile_SetPass(&world->map, pos, true);
 			continue;
 		}
-		index = entity_Add(world, type_struc);
-		entity_InitStruc(world, index, alias_floor, x, y, z * 4, 0, 
+		index = entity_Add(world, ENTTYPE_OBJ);
+		entity_InitStruc(world, index, ENTALIAS_FLOOR, x, y, z * 4, 0, 
 			DEF_OFFSET, floorType, 0);														
 	}							
 	}				
 	}
-	index = entity_Add(world, type_char);
+	index = entity_Add(world, ENTTYPE_CHAR);
 	entity_InitChar(world, index);	
 	struct chara_stats *stats = &world->characters[0].stats;
-	strcpy(stats->firstName, "Arston");	
-	strcpy(stats->lastName, "Blowfield");	 
+	strcpy_s(stats->firstName, 32, "Arston");	
+	strcpy_s(stats->lastName, 32, "Blowfield");	 
 	stats->race = race_human;
 	stats->dress = dress_2;	
 	stats->body = body_fat;	
@@ -422,7 +359,8 @@ static void world_StartWorld(struct game_state *state)
 	stats->attribs = attribs;
 	world->entities[world->characters[0].entIndex].state = entstate_offscreen;
 	
-	FILE *charHandle = fopen("data/test_chars.chara", "rb");
+	FILE *charHandle;
+	fopen_s(&charHandle, "data/test_chars.chara", "rb");
 	if(!charHandle) {printf("char file read fialed\n");}
 	struct char_file_header header = {};
 	if(!fread(&header, sizeof(struct char_file_header), 1, charHandle)) {
@@ -436,7 +374,7 @@ static void world_StartWorld(struct game_state *state)
 	for(int32_t i = 0; i < header.count; ++i) {
 		struct loaded_char newChar = {};
 		fread(&newChar, sizeof(struct loaded_char), 1, charHandle);
-		index = entity_Add(world, type_char);
+		index = entity_Add(world, ENTTYPE_CHAR);
 		entity_InitChar(world, index);	
 		world->entities[world->characters[i + 1].entIndex].state = entstate_dormant; 		
 		worlddir_northewCharFromFile(&world->characters[i + 1].stats, &newChar);
@@ -531,7 +469,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 	pub_RenderLimits(world);	
 	
 	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) {
-		if(ent->type == ETYPE_NULL) {continue;}
+		if(ent->type == ENTTYPE_NULL) {continue;}
 		
 		
 		if(ent->state != entstate_onscreen && ent->alias != alias_char) continue;									
@@ -546,7 +484,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 		trans.offset = SubVec3(ent->pos.xyz, world->cam.pos);				
 						
 		switch(ent->alias) {
-		case alias_floor: {
+		case ENTALIAS_FLOOR: {
 			render_PushMesh(group, 
 			asset_FindMesh(tState->assets, asset_floor, floor_bmp_count), 
 			asset_FindBMP(tState->assets, asset_floor, GET_STRUC(ent)->bmpType),
@@ -590,18 +528,18 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 				render_PushRect(group, trans.offset, RealToVec2(1.0f, 1.0f), col);								
 			} 	*/					
 			break;				
-		} case alias_support: {				
+		} case ENTALIAS_SUPPORT: {				
 			render_PushMesh(group, asset_FindMesh(tState->assets, asset_support, 1), 
 				asset_FindBMP(tState->assets, asset_support, 0),
 				trans.offset, ent->offset, ent->rotation);			
 			break;				
-		} case alias_stool: {		
+		} case ENTALIAS_STOOL: {		
 					
 			render_PushMesh(group, asset_FindMesh(tState->assets, asset_stool, 1), 
 				asset_FindBMP(tState->assets, asset_stool, 0),
 				trans.offset, ent->offset, ent->rotation);			
 			break;				
-		} case alias_table2x1: {			
+		} case ENTALIAS_TABLE: {			
 			render_PushMesh(group, asset_FindMesh(tState->assets, asset_table, 1), 
 				asset_FindBMP(tState->assets, asset_table, 0),
 				trans.offset, ent->offset, ent->rotation);					
@@ -616,7 +554,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 				asset_FindBMP(tState->assets, asset_pillar, 0),
 				trans.offset, ent->offset, ent->rotation);				
 			break;
-		} case alias_wall: {			
+		} case ENTALIAS_WALL: {			
 			uint32_t wallType = GET_STRUC(ent)->meshType;				
 			
 			render_PushMesh(group, 
@@ -703,22 +641,6 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 					current->stats.face, ent->rotation, defaultSpriteZ);	
 			}			
 			
-			//render_PushBMP(group, trans, 
-			//		asset_FindBMP(tState->assets, dressOffset, 
-			//		((current->stats.dress - 1) * 8) + ent->rotation), 
-			//		2.5f, ent->offset, defaultSpriteZ);	
-			//	
-			//render_PushBMP(group, trans, 
-			//		asset_FindBMP(tState->assets, hairOffset, 
-			//		((current->stats.hair) * 8) + ent->rotation), 
-			//		2.5f, ent->offset, defaultSpriteZ);	
-			//
-			//if(ent->rotation > 2) {
-			//	render_PushBMP(group, trans, 
-			//		asset_FindBMP(tState->assets, faceOffset, 
-			//		((current->stats.face) * 5) + (ent->rotation - 3)), 
-			//		2.5f, ent->offset, defaultSpriteZ);	
-			//}	
 			if(current->bubble) {
 				union vec3 bubbleOffset = {
 					.x = ent->offset.x - 0.25,
@@ -730,7 +652,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 					0.5f, bubbleOffset, defaultSpriteZ);		
 			}	
 			trans.offset.z += 3;
-			render_PushCube(group, trans.offset, 1, 3.0f, 0x0F0000FF);	
+			render_PushCube(group, trans.offset, 0.5f, 3.0f, 0xF00000FF);	
 			break;				
 		} case alias_tiolet: {
 			render_PushMesh(group, asset_FindMesh(tState->assets, asset_tiolet, 1 + ent->rotation), 
@@ -744,7 +666,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 					trans.offset, ent->offset, ent->rotation);
 				
 			break;	
-		} case aliasdir_northull:{
+		} case ENTALIAS_NULL:{
 			break;
 		}  default:{
 			INVALID_PATH;

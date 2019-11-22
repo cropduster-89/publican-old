@@ -47,7 +47,7 @@ struct platform_work_queue {
 };
 
 struct win32_thread_startup {
-		struct platform_work_queue *queue;		
+	struct platform_work_queue *queue;		
 };
 /*************************************************************************************************
 		Win32 WGL Guff
