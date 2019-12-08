@@ -21,7 +21,15 @@ enum wall_mesh_type_id {
 	wall_mesh_count
 };
 
-enum asset_type_id {
+enum asset_type_id {	
+	ASSET_UPTXT,
+	ASSET_DOWNTXT,
+	ASSET_BUILDTXT,
+	
+	ASSET_THIRSTTXT,
+	ASSET_DRUNKTXT,
+	ASSET_BLADDERTXT,
+	
 	asset_floor,
 	asset_support,
 	asset_steps,	
@@ -92,6 +100,11 @@ struct loaded_bmp {
 #define VERTEX_STRIDE 8
 #define FACE_STRIDE 3
 
+struct loaded_string {
+	void *data;
+	uint32_t size;
+};
+
 struct loaded_mesh {
 	void *data;
 	uint32_t vertexCount;	
@@ -110,6 +123,7 @@ enum finalize_asset_op {
 	final_bmp,
 	final_skin,
 	final_mesh,
+	final_string,
 };
 
 struct load_asset_work {
@@ -163,9 +177,9 @@ struct asset_memory_size {
 	uint32_t section;
 };
 
-enum asset_header_type {
-	headerdir_northone,
+enum asset_header_type {	
 	header_bmp,
+	ASSETHEADER_STRING,
 	header_mesh,
 	header_character,
 };
@@ -181,6 +195,7 @@ struct asset_memory_header {
 	union {
 		struct loaded_bmp bmp;				
 		struct loaded_mesh mesh;
+		struct loaded_string string;
 	};		
 };
 

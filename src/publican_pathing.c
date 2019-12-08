@@ -5,8 +5,7 @@ __________     ___.   .__  .__
  |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
  |____|   |____/|___  /____/__|\___  >____  /___|  /
                     \/             \/     \/     \/
-			@????mostly done????? keep an eye out for small bugs
-
+			@????mostly done????? 
 			@add support for paths over valid length
 			@ie, allow path, but make a new one when completed
 			@and remove the assertion
@@ -21,7 +20,7 @@ static bool StepCheck(struct step_data step,
 	bool result = false;
 	if(dir % 2 == 0) {return(result);}
 
-	if(step.rotation == 0 && dir == DIR_NORTH) 	{result = true;}
+	if     (step.rotation == 0 && dir == DIR_NORTH)	{result = true;}
 	else if(step.rotation == 1 && dir == DIR_WEST) 	{result = true;}
 	else if(step.rotation == 2 && dir == DIR_SOUTH)	{result = true;}
 	else if(step.rotation == 3 && dir == DIR_EAST) 	{result = true;}
@@ -272,10 +271,10 @@ static inline bool IsNorthwestTilePassable(struct map_data *map,
 *
 *		wall values:
 *
-*		****** wall 0  /***** wall 1 ////// wall 2 ////// wall 3 	N
-*		******         /*****        ******        /*****           W	   E
-*		******         /*****        ******        /*****       	S
-*		******         /*****        ******        /*****
+*		****** wall 0  |***** wall 1 ------ wall 2 |------ wall 3 	N
+*		******         |*****        ******        |*****           W	   E
+*		******         |*****        ******        |*****       	S
+*		******         |*****        ******        |*****
 *
 *		No steps or elevations allowed on diagonals
 *
@@ -327,7 +326,8 @@ static bool TileIsPassable(enum direction dir,
 	{
 		result = IsNorthwestTilePassable(map, dir, floorFlag, pos);
 		break;
-	}
+	} 
+	default: INVALID_PATH;
 	}
 	return(result);
 }
@@ -544,6 +544,9 @@ static struct point3 GetCoordFromDirection(int32_t dir,
 *		and make new path in ai when completed, so assetrion
 *		can be removed
 *
+*		Bug re closed list check! pathGrid must be zeroed
+*		before use, this changed when open/closed status mived from 
+*		bool to bitfield
 */
 extern struct node_list *path_GetPath(struct point3 startPoint,
 				      struct point3 endPoint,
@@ -553,7 +556,7 @@ extern struct node_list *path_GetPath(struct point3 startPoint,
 {
 	struct map_data *map = &world->map;
 
-	struct path_node pathGrid[64][64][2];
+	struct path_node pathGrid[64][64][2] = {};
 	bool dupGrid[64][64][2] = {};
 
 	struct path_node *startNode = &pathGrid[startPoint.x][startPoint.y][startPoint.z];

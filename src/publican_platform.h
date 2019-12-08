@@ -187,7 +187,9 @@ struct pub_memory {
 	
 	struct platform_work_queue *highPriorityQueue;
 	struct platform_work_queue *lowPriorityQueue;	
-	struct platform_texture_op_queue textureOpQueue;	
+	struct platform_texture_op_queue textureOpQueue;
+
+	uint32_t fboCount;
 
 	struct platform_api platformAPI;	
 #ifdef DEBUG		

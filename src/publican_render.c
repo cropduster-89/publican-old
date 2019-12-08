@@ -1,5 +1,16 @@
+/************************************************************************************		
+__________     ___.   .__  .__                      	
+\______   \__ _\_ |__ |  | |__| ____ _____    ____  
+ |     ___/  |  \ __ \|  | |  |/ ___\\__  \  /    \ 	Render transforms
+ |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
+ |____|   |____/|___  /____/__|\___  >____  /___|  /
+                    \/             \/     \/     \/ 
+		    @Oh god no please not this shit again
+		    @needs love		   
+*************************************************************************************/
+
 static inline struct push_buffer_result PushBuffer(struct render_group *group,
-												   uint32_t dataSize)
+						   uint32_t dataSize)
 {
 	struct render_commands *commands = group->commands;
 	
@@ -261,8 +272,7 @@ static inline void render_PushBMP(struct render_group *group,
 				  union vec3 offset,
 				  float zbias)
 {		
-	struct loaded_bmp *bmp = assets_GetBMP(group->assets, id);
-	
+	struct loaded_bmp *bmp = assets_GetBMP(group->assets, id);	
 	if(bmp) {
 		render_PushLoadedBMP(group, trans, bmp, height, offset, zbias);
 	} else {			
@@ -345,9 +355,8 @@ static struct mat4 inline render_ApplyRotation(int32_t rotation)
 	struct mat4 result = Identity();
 	
 	switch(rotation) {
-	case 0: {
-		break;
-	} case 1: {
+	case 0: {break;} 
+	case 1: {
 		result = RotZ(DegreesToRads(90));
 		break;
 	} case 2: {
@@ -378,8 +387,8 @@ static inline void render_PushMesh(struct render_group *group,
 		if(entry) {			
 			entry->mesh = mesh;
 			entry->bmp = bmp;			
-			entry->pos = ADDVEC(pos, offset);
-			entry->transform = Translate(render_ApplyRotation(rotation), entry->pos);					
+			entry->transform = Translate(render_ApplyRotation(rotation), 
+				ADDVEC(pos, offset));					
 		}										
 	} if(!mesh) {
 		assets_LoadMesh(group->assets, idMesh, false);				

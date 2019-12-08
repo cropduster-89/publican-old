@@ -14,12 +14,6 @@ __________     ___.   .__  .__
 
 #define DEF_LABEL_SIZE 32
 
-/********************************************************
-		FOR ALL UI ENUMS:
-		items that are always displayed come first,
-		starting from 0
-********************************************************/
-
 enum ui_element_sate {
 	UISTATE_ALWAYSON = 0,
 	UISTATE_VISIBLE = 8,
@@ -28,8 +22,10 @@ enum ui_element_sate {
 
 enum element_type {
 	UITYPE_PANEL,
-	UITYPE_LABEL,
+	UITYPE_STATIC_LABEL,
+	UITYPE_DYNAMIC_LABEL,
 	UITYPE_TEXTBUTTON,
+	UITYPE_BAR,
 };
 
 enum element_alias {
@@ -38,27 +34,38 @@ enum element_alias {
 	UIALIAS_FLOORDOWN,
 	UIALIAS_BUILD,
 	UIALIAS_CHARPANEL,
+	UIALIAS_CHARNAME,
+	UIALIAS_CHARTHIRSTLBL,
+	UIALIAS_CHARBLADDERLBL,
+	UIALIAS_CHARDRUNKLBL,
+	UIALIAS_CHARTHIRSTBAR,
+	UIALIAS_CHARBLADDERBAR,
+	UIALIAS_CHARDRUNKBAR,
 	
 	UI_COUNT,
 };
 
+struct world_mode;
 #define BUTTON_EVENT_CALLBACK(event) void event(struct world_mode *world, int32_t code)
 typedef BUTTON_EVENT_CALLBACK(button_event_callback);
 
+struct ui_bar {	
+	union vec4 colour;
+};
+
 struct ui_label {
-	char text[DEF_LABEL_SIZE];
-	float scale;	
+	enum asset_type_id text;
+	float scale;
 };
 
 struct ui_text_button {
-	char text[DEF_LABEL_SIZE];
+	enum asset_type_id text;
 	union vec2 textOffset;
 	float scale;	
-	union vec4 colour;	
+	union vec4 colour;		
 };
 
-struct ui_panel {
-	char *test;
+struct ui_panel {	
 	float scale;
 	union vec4 colour;
 };
@@ -71,10 +78,12 @@ struct ui_element {
 	uint64_t state;	
 	union vec2 pos;	
 	union vec2 dim;
+	uint32_t handle;
 	union {
 		struct ui_panel panel;
 		struct ui_label label;
 		struct ui_text_button textButton;		
+		struct ui_bar bar;		
 	};	
 };
 

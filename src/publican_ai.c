@@ -27,39 +27,47 @@ static uint64_t ai_GetActionTime(struct char_intent intent)
 	uint64_t result = 0;
 	
 	switch(intent.type) {
-	case intent_drink: {
+	case intent_drink: 
+	{
 		switch(intent.drink.stage) {
 		case drink_drink: {
 			result = DRINK_TIME;
 			break;
-		}	
+		} default: INVALID_PATH;	
 		}		
 		break;
-	} case intent_purchase: {
+	} 
+	case intent_purchase: 
+	{
 		switch(intent.purchase.stage) {
 		case purchase_buy: {
 			result = SERVE_TIME;
 			break;
-		}		
+		} default: INVALID_PATH;		
 		}
 		break;
-	} case intent_serve: {
+	} 
+	case intent_serve: 
+	{
 		switch(intent.serve.stage) {
 		case serve_sell: {
 			result = SERVE_TIME;
 			break;
-		}		
+		} default: INVALID_PATH;		
 		}
 		break;
-	} case intent_tiolet: {
+	} 
+	case intent_tiolet: 
+	{
 		switch(intent.tiolet.stage) {
 		case tiolet_defecate: {
 			result = TIOLET_TIME;
 			break;
-		}		
+		} default: INVALID_PATH;	 	
 		}
 		break;
-	}	
+	} 
+	default: INVALID_PATH;	
 	}
 	return(result);
 }
@@ -110,11 +118,11 @@ static bool GetEmptyFurn(struct world_mode 	*world,
 			union vec3 furnP = GET_FURNBASEFROMINDEX(world, i)->pos.xyz;			
 			if(!nearestFurn) {
 				nearestFurn = furn;
-				nearDist = abs(charaP.x - furnP.x) +
-					abs(charaP.y - furnP.y);
+				nearDist = fabsf(charaP.x - furnP.x) +
+					fabsf(charaP.y - furnP.y);
 			} else {
-				float newDist = abs(charaP.x - furnP.x) +
-					abs(charaP.y - furnP.y);
+				float newDist = fabsf(charaP.x - furnP.x) +
+					fabsf(charaP.y - furnP.y);
 				if(newDist < nearDist) {
 					nearDist = newDist;
 					nearestFurn = furn;
@@ -185,10 +193,7 @@ static struct point3 ai_GetBarSlotPos(struct world_mode *world,
 			result.y = barBase->pos.y - 1;
 			result.z = barBase->pos.z;
 			break;
-		} default: {
-			printf("ERROR: Slot %d is not valid.\n", barUser->target.slot);
-			INVALID_PATH;
-		}		
+		} default: INVALID_PATH;		
 		}
 		break;
 	} case 1: {
@@ -203,10 +208,7 @@ static struct point3 ai_GetBarSlotPos(struct world_mode *world,
 			result.y = barBase->pos.y;
 			result.z = barBase->pos.z;
 			break;
-		} default: {
-			printf("ERROR: Slot %d is not valid.\n", barUser->target.slot);
-			INVALID_PATH;
-		}
+		} default: INVALID_PATH;
 		}						
 		break;
 	} case 2: {
@@ -221,10 +223,7 @@ static struct point3 ai_GetBarSlotPos(struct world_mode *world,
 			result.y = barBase->pos.y + 1;
 			result.z = barBase->pos.z;
 			break;
-		} default: {
-			printf("ERROR: Slot %d is not valid.\n", barUser->target.slot);
-			INVALID_PATH;
-		}	
+		} default: INVALID_PATH;	
 		}		
 		break;
 	} case 3: {
@@ -239,10 +238,7 @@ static struct point3 ai_GetBarSlotPos(struct world_mode *world,
 			result.y = barBase->pos.y;
 			result.z = barBase->pos.z;
 			break;
-		} default: {
-			printf("ERROR: Slot %d is not valid.\n", barUser->target.slot);
-			INVALID_PATH;
-		}	
+		} default: INVALID_PATH;	
 		}		
 		break;
 	}
@@ -669,9 +665,7 @@ static void Purchase(struct world_mode *world,
 				punter->intent.type = intent_null;
 				UNSET_TARGET(world, punter);
 #ifdef DEBUG
-				//printf("%s %s cannot find path to bar\n", 
-					//punter->stats.firstName,	
-					//punter->stats.lastName);
+				INVALID_PATH;
 #endif				
 			} else {				
 				intent->purchase.stage = purchase_walk;					
@@ -794,8 +788,7 @@ static void ai_Punter(struct world_mode *world,
 static void ai_Staff(struct world_mode *world,
 		     struct entity_char *current)
 {
-	if(current->intent.type == intent_null) {
-		
+	if(current->intent.type == intent_null) {		
 		ai_GuageIntent(world, current);
 	}
 	
@@ -810,7 +803,7 @@ static void ai_Staff(struct world_mode *world,
 		Nothing(world, current);
 		break;
 	} case intent_null: 
-	 default: break;
+	default: break;
 	}	
 }
 
@@ -823,6 +816,5 @@ extern void ai_Think(struct world_mode *world,
 		ai_Punter(world, current);
 	} else {
 		ai_Staff(world, current);
-	}
-	
+	}	
 }

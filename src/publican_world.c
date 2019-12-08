@@ -46,7 +46,7 @@ static void SelectionTest(struct world_mode *world,
 {
 	for(struct entity *ent = &world->entities[0]; ent; ent = ent->next) 
 	{		
-		if(ent->type == ENTTYPE_NULL || ent->type == ENTTYPE_OBJ) {continue;}			
+		if(ent->type == ENTTYPE_NULL || ent->type == ENTTYPE_OBJ || ent->type == ENTTYPE_FURN) {continue;}			
 		else if(IsWithinBounds(ent->bound, testRay)) 
 		{			 
 			if(ent == world->mouseOverEnt.ent ||
@@ -170,47 +170,6 @@ static inline void UpdateCamera(struct world_cam *cam,
 	cam->pos.x = cam->lastPos.x + camTransX;
 	cam->pos.y = cam->lastPos.y + camTransY;		
 	cam->dolly += camTransZ;		
-}
-
-
-/*
-*		Processes mouse clicks during gameplay.
-*		The order, and exclusivity of these is
-*		important, or two actions may result from 
-*		one click.
-*/
-static void world_Control(struct world_mode *world,
-			  struct pub_input *input,
-			  struct loaded_bmp drawBuffer)
-{		
-	
-	UpdateCamera(&world->cam, input, drawBuffer);		
-	
-	if(input->buttons.lClick.endedDown) {
-		if(world->edit.editorOpen && world->edit.current.ent != NULL) {
-			if(world->edit.current.ent->alias == ENTALIAS_WALL) {
-				world->edit.wallsInit = false;
-				edit_WallPlace(world);
-				world->edit.newAnchor = 0;
-				world->edit.anchorX = 0;
-				world->edit.anchorY = 0;
-				world->edit.maxLine = 0;
-				world->edit.endX = 0;
-				world->edit.endY = 0;	
-				world->edit.dirLock = dirlock_null;						
-				world->edit.elevLock = 0;						
-				union vec3 dummyPos = {};
-				world->edit.basePos = dummyPos;
-				input->buttons.lClick.endedDown = 0;
-				printf("walls end\n");
-				return;
-			} else {
-				edit_PlaceItem(world);
-				input->buttons.lClick.endedDown = 0;
-				return;
-			}			
-		} 	
-	}	
 }
 
 static inline void pub_RenderLimits(struct world_mode *world)
@@ -651,8 +610,8 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 					asset_FindBMP(tState->assets, asset_bubbles, 0), 
 					0.5f, bubbleOffset, defaultSpriteZ);		
 			}	
-			trans.offset.z += 3;
-			render_PushCube(group, trans.offset, 0.5f, 3.0f, 0xF00000FF);	
+			// trans.offset.z += 3;
+			// render_PushCube(group, trans.offset, 0.5f, 3.0f, 0xF00000FF);	
 			break;				
 		} case alias_tiolet: {
 			render_PushMesh(group, asset_FindMesh(tState->assets, asset_tiolet, 1 + ent->rotation), 
@@ -674,26 +633,57 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 		}	
 		}									  				
 	}
-	
-	world_Control(world, input, drawBuffer);
-	ui_WorldMode(world, input, textGroup, tState);
-	
-	//for(int32_t i = 0; i < 8; ++i) {
-	//	struct object_transform trans = {};
-	//		trans.offset = SubVec3(world->mouseCoords[i], world->cam.pos);	
-	//		render_PushCube(group, trans.offset, 0.1f, 0.1f, 0xFF0000FF);	
-	//}
+		
+		
+	UpdateCamera(&world->cam, input, drawBuffer);	
+	bool uiHot = ui_WorldMode(world, input, textGroup, tState);
+	if(input->buttons.lClick.endedDown && !uiHot) 	
+	{		
+		if(world->mouseOverEnt.ent)
+		{
+			world->selectedEnt = world->mouseOverEnt;
+			ui_OpenCharPanel(world);				
+		}
+		else if(world->edit.editorOpen && world->edit.current.ent != NULL) 
+		{
+			if(world->edit.current.ent->alias == ENTALIAS_WALL) 
+			{
+				world->edit.wallsInit = false;
+				edit_WallPlace(world);
+				world->edit.newAnchor = 0;
+				world->edit.anchorX = 0;
+				world->edit.anchorY = 0;
+				world->edit.maxLine = 0;
+				world->edit.endX = 0;
+				world->edit.endY = 0;	
+				world->edit.dirLock = dirlock_null;						
+				world->edit.elevLock = 0;						
+				union vec3 dummyPos = {};
+				world->edit.basePos = dummyPos;					
+			} 
+			else 
+			{
+				edit_PlaceItem(world);				
+			}			
+		} 	
+		else 
+		{
+			struct entity_target nullTarget= {};
+			world->selectedEnt = nullTarget;
+			
+			ui_StateClear(world->ui.elements);			
+		}		
+	}	
+	input->buttons.lClick.endedDown = false;
 	
 	struct edit_state *edit = &world->edit;
 	if(input->buttons.shift.endedDown && !edit->editorOpen) { 
 		struct edit_placed_entity newCurrent = {};
 		edit->editorOpen = true;
 		edit->current= newCurrent;
-		printf("editor open\n");
 		input->buttons.shift.endedDown = 0;
 	} else if(input->buttons.shift.endedDown && edit->editorOpen) { 
 		edit->editorOpen = false;		
-		printf("editor closed\n");
 		input->buttons.shift.endedDown = 0;
 	}
 	

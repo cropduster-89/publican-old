@@ -598,14 +598,12 @@ extern struct entity_struc *entity_FindWallByPos(struct world_mode *world,
 						 int32_t rot)
 {
 	struct entity_struc *result = NULL;
-	printf("looking for %d %d rot: %d\n", pos.x, pos.y, rot);
 	for(int32_t i = 0; i < world->strucCount; ++i) {	
 		struct entity_struc *test = &world->structures[i];
 		struct entity *base = ENT_BASE(world, test);
 		if(base->alias != ENTALIAS_WALL) {continue;}
 		
-		struct point3 testPos = test->coords;
-		printf("found %d %d rot: %d\n", testPos.x, testPos.y, base->rotation);
+		struct point3 testPos = test->coords;		
 		if(COMP_POINT(testPos, pos) && base->rotation == rot) {
 			result = test;
 			break;	
@@ -624,8 +622,7 @@ extern struct entity_struc *entity_FindPillarByPos(struct world_mode *world,
 		struct entity *base = ENT_BASE(world, test);
 		if(base->alias != alias_pillar) {continue;}
 		
-		struct point3 testPos = test->coords;
-		
+		struct point3 testPos = test->coords;		
 		if(COMP_POINT(testPos, pos)) {
 			result = test;
 			break;	

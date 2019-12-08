@@ -7,11 +7,6 @@ __________     ___.   .__  .__                      	Win32 Platform layer
                     \/             \/     \/     \/ 
 *************************************************************************************/
 
-#pragma GCC diagnostic ignored "-Wswitch"
-#pragma GCC diagnostic ignored "-Wcomment"
-#pragma GCC diagnostic ignored "-Wsizeof-pointer-div"
-#pragma GCC diagnostic ignored "-Wabsolute-value"
-
 #define WINVER 0x0600
 #define _WIN32_WINNT 0x0600
 
@@ -27,10 +22,8 @@ __________     ___.   .__  .__                      	Win32 Platform layer
 #include <limits.h>
 #include <xmmintrin.h>
 
-#ifdef DEBUG
 #define WIN_X 1600
 #define WIN_Y 900
-#endif
 
 typedef char GLchar;
 typedef int64_t GLsizeiptr;
@@ -101,6 +94,7 @@ typedef void WINAPI gl_gen_buffers(GLsizei n, GLuint *buffers);
 typedef void WINAPI gl_bind_buffer(GLenum target, GLuint buffers);
 typedef void WINAPI gl_buffer_data(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
 typedef void WINAPI gl_buffer_sub_data(GLenum target, intptr_t offset, GLsizeiptr size, const GLvoid *data);
+typedef void WINAPI gl_delete_framebuffers(GLsizei n, const GLuint *framebuffers);
 typedef void WINAPI gl_bind_framebuffer(GLenum target, GLuint framebuffer);
 typedef void WINAPI gl_gen_vertex_arrays(GLsizei n, GLuint *arrays);
 typedef void WINAPI gl_generate_mipmap(GLenum target);
@@ -142,6 +136,7 @@ static gl_bind_buffer *glBindBuffer;
 static gl_buffer_data *glBufferData;
 static gl_buffer_sub_data *glBufferSubData;
 static gl_bind_vertex_array *glBindVertexArray;
+static gl_delete_framebuffers *glDeleteFramebuffers;
 static gl_enable_vertex_attrib_array *glEnableVertexAttribArray;
 static gl_vertex_attrib_divisor *glVertexAttribDivisor;
 static gl_vertex_attrib_pointer *glVertexAttribPointer;
@@ -247,7 +242,7 @@ extern PLATFORM_GET_ALL_FILES_OF_TYPE_START(win32_GetFilesTypeStart)
 	case filetype_asset: {
 		wildCard = L"*.pubb";
 		break;
-	}
+	} default: INVALID_PATH;
 	}
 	result.fileCount = 0;
 	
@@ -308,7 +303,8 @@ extern PLATFORM_FILE_ERROR(win32_FileError)
 
 extern PLATFORM_READ_DATA_FROM_FILE(win32_ReadDataFromFile)
 {
-	if(PlatformNoFileErrors(source)) {
+	if(PlatformNoFileErrors(source)) 
+	{
 		struct win32_file_handle *handle = (struct win32_file_handle *)source->platform;
 		OVERLAPPED overlapped = {};
 		overlapped.Offset = (uint32_t)((offset >> 0) & 0xFFFFFFFF);
@@ -316,11 +312,10 @@ extern PLATFORM_READ_DATA_FROM_FILE(win32_ReadDataFromFile)
 		
 		uint32_t fileSize32 = SafeTruncateUInt64(size);
 		DWORD bytesRead;
-		if(ReadFile(handle->win32Handle, dest, fileSize32, &bytesRead, &overlapped) &&
-		   (fileSize32 == bytesRead)) {
-				//SUCCESS!!!!!!
-		} else {
-				win32_FileError(source, "win32_ReadDataFromFile Failed\n");
+		if(!ReadFile(handle->win32Handle, dest, fileSize32, &bytesRead, &overlapped) &&
+		   (fileSize32 != bytesRead)) 
+		{				
+			win32_FileError(source, "win32_ReadDataFromFile Failed\n");
 		}
 	}
 }
@@ -364,7 +359,7 @@ PLATFORM_ALLOCATE_MEMORY(win32_Alloc)
 		protectOffset = pageSize + sizeRoundUp;
 	}
 	struct win32_memory_block *block = (struct win32_memory_block *)
-			VirtualAlloc(0, totalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+		VirtualAlloc(0, totalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 		
 	assert(block);
 	block->block.base = (uint8_t *)block + baseOffset; 
@@ -373,7 +368,7 @@ PLATFORM_ALLOCATE_MEMORY(win32_Alloc)
 	if(flags & (PLATFORM_UNDERFLOW|PLATFORM_OVERFLOW)) {
 		DWORD oldProtect = 0;
 		BOOL boolProtect = VirtualProtect((uint8_t *)block + protectOffset,
-				pageSize, PAGE_NOACCESS, &oldProtect);
+			pageSize, PAGE_NOACCESS, &oldProtect);
 		assert(boolProtect);	
 		
 	}
@@ -527,6 +522,7 @@ static HGLRC win32_InitOpenGL(HDC dc,
 		glBufferData = (gl_buffer_data *)wglGetProcAddress("glBufferData");
 		glBufferSubData = (gl_buffer_sub_data *)wglGetProcAddress("glBufferSubData");
 		glGenVertexArrays = (gl_gen_vertex_arrays *)wglGetProcAddress("glGenVertexArrays");
+		glDeleteFramebuffers = (gl_delete_framebuffers *)wglGetProcAddress("glDeleteFramebuffers");
 		glBindVertexArray = (gl_bind_vertex_array *)wglGetProcAddress("glBindVertexArray");
 		glVertexAttribDivisor = (gl_vertex_attrib_divisor *)wglGetProcAddress("glVertexAttribDivisor");
 		glVertexAttribPointer = (gl_vertex_attrib_pointer *)wglGetProcAddress("glVertexAttribPointer");
@@ -936,7 +932,6 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	struct platform_work_queue lowPriorityQueue = {};
 	win32_MakeQueue(&lowPriorityQueue, ARRAY_COUNT(lowPriorityStart), lowPriorityStart);
 
-
 	struct pub_memory memory = {};
 	memory.highPriorityQueue = &highPriorityQueue;
 	memory.lowPriorityQueue = &lowPriorityQueue;
@@ -963,7 +958,7 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 	uint32_t textureOpCount = 1024;
 	struct platform_texture_op_queue *textureOpQueue = &memory.textureOpQueue;
 	textureOpQueue->firstFree = (struct texture_op *)VirtualAlloc(0, sizeof(struct texture_op) * textureOpCount,
-																  MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+		 MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 	for(uint32_t opIndex = 0; opIndex < (textureOpCount - 1); ++opIndex) 
 	{
 		struct texture_op *op = textureOpQueue->firstFree + opIndex;
@@ -1022,12 +1017,9 @@ int CALLBACK WinMain(HINSTANCE hInstance,
 		struct memory_arena frameArena = {};
 		win32_OutputBuffer(&commands, dc, drawRegion, 
 				 dim.x, dim.y, &frameArena);
-		ReleaseDC(window, dc);
+		ReleaseDC(window, dc);		
 		
-		
-		input->mouseZ = 0;
-		
-		
+		input->mouseZ = 0;		
 	}
 	return(0);
 }

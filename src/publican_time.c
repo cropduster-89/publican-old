@@ -1,9 +1,21 @@
 static inline uint64_t time_GetTime(void)
 {
-	//struct timeval tv;
-	//gettimeofday(&tv, NULL);
-	//return((uint64_t) tv.tv_sec * (uint64_t)1000000UL + (uint64_t)tv.tv_usec);
-	return(1);
+	struct timeval tv;
+	static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+
+	SYSTEMTIME system_time;
+	FILETIME file_time;
+	uint64_t time;
+
+	GetSystemTime(&system_time);
+	SystemTimeToFileTime(&system_time, &file_time);
+	time = ((uint64_t)file_time.dwLowDateTime );
+	time += ((uint64_t)file_time.dwHighDateTime) << 32;
+	
+	tv.tv_sec  = (int32_t) ((time - EPOCH) / 10000000L);
+	tv.tv_usec = (int32_t) (system_time.wMilliseconds * 1000);	
+	
+	return((uint64_t) tv.tv_sec * (uint64_t)1000000UL + (uint64_t)tv.tv_usec);	
 }
 
 static inline struct game_time time_Update(struct game_time timer)

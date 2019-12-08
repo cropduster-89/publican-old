@@ -12,6 +12,7 @@ __________     ___.   .__  .__
 *************************************************************************************/
 
 extern void ui_TextOut(char *string,
+		       int32_t len,
 		       struct render_group *renderGroup,
 		       struct temp_state *tState,
 		       struct point2 startPos,	
@@ -20,8 +21,7 @@ extern void ui_TextOut(char *string,
 	float lineWeight = 20.0f;	
 	struct object_transform trans = render_FlatTrans();
 	trans.offset.x = startPos.x;
-	trans.offset.y = startPos.y;
-	uint32_t len = text_StringCount(string);	
+	trans.offset.y = startPos.y;	
 	char *current = string;		
 	float prevX = 0;
 	float prevSizeX = 0;
@@ -57,8 +57,6 @@ extern void ui_TextOut(char *string,
 			trans.offset.x +=  align.x + prevX + prevSizeX;				
 			trans.offset.y -=  size.y + align.y;
 			
-			//trans = render_UprightTrans();		
-			
 			prevX = align.x;
 			prevSizeX = size.x;
 			render_PushBMP(renderGroup, trans, id, size.y, uiOffset, 1.0f);			
@@ -68,20 +66,24 @@ extern void ui_TextOut(char *string,
 }
 
 #define ui_StateClear(elements) \
-	_ui_ChangeState(elements, 0, 0, ARRAY_COUNT(elements), true)	
+	_ui_ChangeState(elements, 0, 0, true)	
 #define ui_ChangeState(elements, start, end) \
-	_ui_ChangeState(elements, start, end, ARRAY_COUNT(elements), false)	
+	_ui_ChangeState(elements, start, end, false)	
 static void _ui_ChangeState(struct ui_element elements[],
 			    int32_t start,
-			    int32_t end,		
-			    int32_t count,
+			    int32_t end,			   
 			    bool fullClear)
 {	
-	for(int32_t i = 0; i < count; ++i) {		
-		if(BITCHECK(elements[i].state, UISTATE_ALWAYSON)) {continue;}		
-		else if(fullClear) {BITCLEAR(elements[i].state, UISTATE_VISIBLE);}			
-		else if(i >= start && i < end) {BITSET(elements[i].state, UISTATE_VISIBLE);}	
-		else {BITCLEAR(elements[i].state, UISTATE_VISIBLE);}		
+	for(int32_t i = 0; i < UI_COUNT; ++i) {		
+		if(BITCHECK(elements[i].state, UISTATE_ALWAYSON)) {
+			continue;
+		} else if(fullClear) {
+			BITCLEAR(elements[i].state, UISTATE_VISIBLE);			
+		} else if(i >= start && i < end) { 
+			BITSET(elements[i].state, UISTATE_VISIBLE);
+		} else {
+			BITCLEAR(elements[i].state, UISTATE_VISIBLE);
+		}		
 	}		
 }
 
@@ -97,24 +99,27 @@ static void ui_InitWorldUI(struct world_mode *world,
 	float y = (float)group->commands->h;
 	
 	struct ui_element *bottomPanel = &world->ui.elements[UIALIAS_BOTTOMPANEL];
-	bottomPanel->type = UIALIAS_BOTTOMPANEL;
+	bottomPanel->type = UITYPE_PANEL;	
 	bottomPanel->state = UISTATE_ALWAYSON|UISTATE_VISIBLE;	
 	bottomPanel->dim.x = x;
 	bottomPanel->dim.y = 70;
 	bottomPanel->pos = RealToVec2(-x / 2, -y / 2);
 	bottomPanel->panel.colour = RealToVec4(0.8f, 0.7f, 0.5f, 0.75f);
+	BITSET(bottomPanel->state, UISTATE_ALWAYSON);
+	BITSET(bottomPanel->state, UISTATE_VISIBLE);
 	
 	struct ui_element *floorUp = &world->ui.elements[UIALIAS_FLOORUP];
-	floorUp->type = UITYPE_TEXTBUTTON;
-	floorUp->state = UISTATE_ALWAYSON|UISTATE_VISIBLE;	
+	floorUp->type = UITYPE_TEXTBUTTON;	
 	floorUp->parent = bottomPanel;
 	floorUp->dim.x = 80;
 	floorUp->dim.y = 50;
 	floorUp->pos = RealToVec2(floorUp->parent->pos.x + 10, floorUp->parent->pos.y + 10);
+	floorUp->textButton.text = ASSET_UPTXT;
 	floorUp->textButton.colour = RealToVec4(0.9f, 0.8f, 0.5f, 0.75f);
 	floorUp->textButton.textOffset = RealToVec2(10, 10);
-	floorUp->callback = FloorUp;
-	strcpy_s(floorUp->textButton.text, DEF_LABEL_SIZE, "Up");
+	floorUp->callback = &FloorUp;	
+	BITSET(floorUp->state, UISTATE_ALWAYSON);
+	BITSET(floorUp->state, UISTATE_VISIBLE);
 	
 	struct ui_element *floorDown = &world->ui.elements[UIALIAS_FLOORDOWN];
 	floorDown->type = UITYPE_TEXTBUTTON;
@@ -123,10 +128,12 @@ static void ui_InitWorldUI(struct world_mode *world,
 	floorDown->dim.x = 80;
 	floorDown->dim.y = 50;
 	floorDown->pos = RealToVec2(floorUp->parent->pos.x + 100, floorUp->parent->pos.y + 10);
+	floorDown->textButton.text = ASSET_DOWNTXT;
 	floorDown->textButton.colour = RealToVec4(0.9f, 0.8f, 0.5f, 0.75f);
 	floorDown->textButton.textOffset = RealToVec2(10, 10);	
-	floorDown->callback = FloorDown;
-	strcpy_s(floorDown->textButton.text, DEF_LABEL_SIZE, "Down");
+	floorDown->callback = &FloorDown;	
+	BITSET(floorDown->state, UISTATE_ALWAYSON);
+	BITSET(floorDown->state, UISTATE_VISIBLE);
 	
 	struct ui_element *build = &world->ui.elements[UIALIAS_BUILD];
 	build->type = UITYPE_TEXTBUTTON;
@@ -135,18 +142,78 @@ static void ui_InitWorldUI(struct world_mode *world,
 	build->dim.x = 80;
 	build->dim.y = 50;
 	build->pos = RealToVec2(x / 2 - 90, build->parent->pos.y + 10);
+	build->textButton.text = ASSET_BUILDTXT;
 	build->textButton.colour = RealToVec4(0.9f, 0.8f, 0.5f, 0.75f);
-	build->textButton.textOffset = RealToVec2(10, 10);
-	strcpy_s(build->textButton.text, DEF_LABEL_SIZE, "Build");	
+	build->textButton.textOffset = RealToVec2(10, 10);		
+	BITSET(build->state, UISTATE_VISIBLE);
 	
 	struct ui_element *charPanel = &world->ui.elements[UIALIAS_CHARPANEL];
 	charPanel->type = UITYPE_PANEL;
-	charPanel->state = UISTATE_VISIBLE|UISTATE_ALWAYSON;
-	charPanel->dim.x = 512;
+	charPanel->state = 0;
+	charPanel->dim.x = 360;
 	charPanel->dim.y = y - 70;
-	charPanel->pos = RealToVec2(x / 2 - 512 , -y / 2 + 70);
+	charPanel->pos = RealToVec2(x / 2 - 360, -y / 2 + 70);
 	charPanel->panel.colour = RealToVec4(0.9f, 0.5f, 0.3f, 0.75f);	
 	
+	struct ui_element *charName = &world->ui.elements[UIALIAS_CHARNAME];
+	charName->type = UITYPE_DYNAMIC_LABEL;
+	charName->state = UISTATE_VISIBLE|UISTATE_ALWAYSON;
+	charName->dim.x = 256;
+	charName->dim.y = 128;
+	charName->parent = charPanel;
+	charName->pos = RealToVec2(charPanel->pos.x + 20, 
+		y / 2 - 50);	
+		
+	struct ui_element *thirstLabel = &world->ui.elements[UIALIAS_CHARTHIRSTLBL];
+	thirstLabel->type = UITYPE_STATIC_LABEL;	
+	thirstLabel->label.text = ASSET_THIRSTTXT;
+	thirstLabel->parent = charPanel;
+	thirstLabel->dim.x = 128;
+	thirstLabel->dim.y = 64;
+	thirstLabel->pos = RealToVec2(charPanel->pos.x + 20, y / 2 - 100);
+	
+	struct ui_element *thirstBar = &world->ui.elements[UIALIAS_CHARTHIRSTBAR];
+	thirstBar->alias = UIALIAS_CHARTHIRSTBAR;	
+	thirstBar->type = UITYPE_BAR;	
+	thirstBar->parent = charPanel;
+	thirstBar->pos = RealToVec2(charPanel->pos.x + 105, y / 2 - 100);
+	thirstBar->dim.x = (x / 2) - thirstBar->pos.x - 20;
+	thirstBar->dim.y = 16;	
+	thirstBar->bar.colour = RealToVec4(0.3f, 0.8f, 0.3f, 1.0f);
+	
+	struct ui_element *bladderLabel = &world->ui.elements[UIALIAS_CHARBLADDERLBL];
+	bladderLabel->type = UITYPE_STATIC_LABEL;	
+	bladderLabel->label.text = ASSET_BLADDERTXT;
+	bladderLabel->parent = charPanel;
+	bladderLabel->dim.x = 128;
+	bladderLabel->dim.y = 64;
+	bladderLabel->pos = RealToVec2(charPanel->pos.x + 20, y / 2 - 130);
+	
+	struct ui_element *bladderBar = &world->ui.elements[UIALIAS_CHARBLADDERBAR];
+	bladderBar->alias = UIALIAS_CHARBLADDERBAR;	
+	bladderBar->type = UITYPE_BAR;	
+	bladderBar->parent = charPanel;
+	bladderBar->pos = RealToVec2(charPanel->pos.x + 105, y / 2 - 130);
+	bladderBar->dim.x = (x / 2) - bladderBar->pos.x - 20;
+	bladderBar->dim.y = 16;	
+	bladderBar->bar.colour = RealToVec4(0.3f, 0.8f, 0.3f, 1.0f);
+	
+	struct ui_element *drunkLabel = &world->ui.elements[UIALIAS_CHARDRUNKLBL];
+	drunkLabel->type = UITYPE_STATIC_LABEL;	
+	drunkLabel->label.text = ASSET_DRUNKTXT;
+	drunkLabel->parent = charPanel;
+	drunkLabel->dim.x = 128;
+	drunkLabel->dim.y = 64;
+	drunkLabel->pos = RealToVec2(charPanel->pos.x + 20, y / 2 - 160);
+	
+	struct ui_element *drunkBar = &world->ui.elements[UIALIAS_CHARDRUNKBAR];
+	drunkBar->alias = UIALIAS_CHARDRUNKBAR;	
+	drunkBar->type = UITYPE_BAR;	
+	drunkBar->parent = charPanel;
+	drunkBar->pos = RealToVec2(charPanel->pos.x + 105, y / 2 - 160);
+	drunkBar->dim.x = (x / 2) - drunkBar->pos.x - 20;
+	drunkBar->dim.y = 16;	
+	drunkBar->bar.colour = RealToVec4(0.3f, 0.8f, 0.3f, 1.0f);	
 		
 	world->ui.init = true;
 }
@@ -177,17 +244,91 @@ static void DrawPanel(struct render_group *group,
 		element->panel.colour);
 }
 
+static void DrawStaticLabel(struct render_group *group,
+			    struct ui_element *element,
+			    struct temp_state *tState,
+			    struct string_id idString)
+{
+	struct loaded_string *string = assets_GetString(group->assets, idString);
+	if(string) {
+		ui_TextOut(string->data, string->size,
+			group, tState, Vec2ToPoint2(ADDVEC(element->pos,
+			element->textButton.textOffset)), 0.4f);
+	} else {
+		assets_LoadString(group->assets, idString, false);
+	}	
+}
+
+static void DrawDynamicLabel(struct world_mode *world,
+			     struct render_group *group,
+			     struct ui_element *element,
+			     struct temp_state *tState)
+{	
+	if(!world->selectedEnt.ent) {return;}
+	struct entity_char *chara = GET_CHAR(world->selectedEnt.ent);	
+	char nameBuffer[65];
+	sprintf(nameBuffer, "%s %s", chara->stats.firstName, chara->stats.lastName);
+	
+	ui_TextOut(nameBuffer, strlen(nameBuffer),
+		group, tState, Vec2ToPoint2(ADDVEC(element->pos,
+		element->textButton.textOffset)), 0.4f);	
+}
+
 static void DrawTextButton(struct render_group *group,
 			   struct ui_element *element,
-			   struct temp_state *tState)
+			   struct temp_state *tState,
+			   struct string_id idString)
 {
 	render_PushRect(group, 
 		RealToVec3(element->pos.x, element->pos.y, 5000.0f), 
 		RealToVec2(element->dim.x, element->dim.y),
 		element->textButton.colour);
-	ui_TextOut(element->textButton.text, 
-		group, tState, Vec2ToPoint2(ADDVEC(element->pos,
-		element->textButton.textOffset)), 0.4f);
+	DrawStaticLabel(group, element, tState, idString);
+}
+
+extern void ui_OpenCharPanel(struct world_mode *world)
+{
+	ui_StateClear(world->ui.elements);
+	BITSET(world->ui.elements[UIALIAS_CHARPANEL].state, UISTATE_VISIBLE);
+}
+
+static inline bool ElementIsVisible(struct ui_element *element)
+{
+	return(BITCHECK(element->state, UISTATE_VISIBLE) || (element->parent &&
+	       BITCHECK(element->parent->state, UISTATE_VISIBLE)));
+}
+
+static float GetNeedsBarVal(struct world_mode *world,
+			    struct ui_element *element)
+{
+	float result = 0;
+	struct entity_char *chara = GET_CHAR(world->selectedEnt.ent);
+	
+	switch(element->alias) {
+	case UIALIAS_CHARTHIRSTBAR: 
+	{	
+		result = chara->stats.thirst;
+		break;
+	}
+	case UIALIAS_CHARBLADDERBAR: 
+	{	
+		result = chara->stats.bladder;
+		break;
+	}
+	case UIALIAS_CHARDRUNKBAR: 
+	{	
+		result = chara->stats.drunk;
+		break;
+	} default: INVALID_PATH;
+	}
+	
+	return(result);
+}
+
+static bool IsNeedsBar(struct ui_element *element)
+{
+	return(element->alias >= UIALIAS_CHARTHIRSTBAR && 
+	       element->alias <= UIALIAS_CHARDRUNKBAR);
 }
 
 extern bool ui_WorldMode(struct world_mode *world,
@@ -203,21 +344,57 @@ extern bool ui_WorldMode(struct world_mode *world,
 		.y = input->mouseY - (group->commands->h / 2),
 	};	
 	
-	for(int32_t i = 0; i < UI_COUNT; ++i) {
+	for(int32_t i = 0; i < UI_COUNT; ++i) 
+	{
 		struct ui_element *element = &world->ui.elements[i];
+		if(!ElementIsVisible(element)) {continue;} 
+		
 		switch(element->type) {
-		case UITYPE_PANEL: {
+		case UITYPE_PANEL: 
+		{
 			DrawPanel(group, element);
 			break;
-		} case UITYPE_TEXTBUTTON: {
-			DrawTextButton(group, element, tState);
+		} 
+		case UITYPE_TEXTBUTTON: 
+		{
+			DrawTextButton(group, element, tState,
+				asset_FindString(tState->assets, 
+				element->textButton.text));
 			break;
-		}	
+		} 
+		case UITYPE_STATIC_LABEL: 
+		{
+			DrawStaticLabel(group, element, tState,
+				asset_FindString(tState->assets, 
+				element->textButton.text));
+			break;
 		}
-		if(IsWithinUiElement(element, mouseP)) {
+		case UITYPE_DYNAMIC_LABEL: 
+		{
+			DrawDynamicLabel(world, group, element, tState);
+			break;
+		}
+		case UITYPE_BAR: 
+		{			
+			if(IsNeedsBar(element)) 
+			{
+				float ammountFull = GetNeedsBarVal(world, element);
+				union vec2 drawLength = {
+					.x = element->dim.x * ammountFull,
+					.y = element->dim.y
+				};			
+				render_PushRect(group, Vec2ToVec3(element->pos, 5001.0f), 
+					drawLength, element->bar.colour);					
+			}				
+			break;
+		}		
+		}
+		if(IsWithinUiElement(element, mouseP)) 
+		{
 			result = true;
 			if(element->type == UITYPE_TEXTBUTTON && 
-			   input->buttons.lClick.endedDown) {
+			   input->buttons.lClick.endedDown) 
+			{
 				assert(element->callback);
 				element->callback(world, element->alias);
 				input->buttons.lClick.endedDown = false;

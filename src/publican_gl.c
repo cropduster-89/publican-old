@@ -250,7 +250,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 	} 
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	
-	static const char *vsdir_northormal[] = {
+	static const char *vsMesh[] = {
 		"#version 450 core							\n"
 		"layout (location = 0) in vec3 inPos;					\n"
 		"layout (location = 1) in vec3 inNormal;				\n"
@@ -275,7 +275,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"}									\n"
 	};
 	
-	static const char *fsdir_northormal[] = {				
+	static const char *fsMesh[] = {				
 		"#version 450 core							\n"
 		"out vec4 fragColour;							\n"
 		"									\n"
@@ -382,7 +382,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"}									\n"
 	};
 	
-	glRuntime.normal = gl_CreateProgram(vsdir_northormal, fsdir_northormal);
+	glRuntime.normal = gl_CreateProgram(vsMesh, fsMesh);
 	glRuntime.colour = gl_CreateProgram(vs_Colour, fs_Colour);
 	glRuntime.sprite = gl_CreateProgram(vs_Sprite, fs_Sprite);	
 	
@@ -972,8 +972,7 @@ extern void gl_Output(struct render_commands *commands,
 			}	
 		}							
 	}	
-	if(glRuntime.rState->meshCount) {gl_MultiRenderMesh();}		
-			
+	if(glRuntime.rState->meshCount) {gl_MultiRenderMesh();}					
 			
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, globalFrameBufferHandles[0]);		
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);		

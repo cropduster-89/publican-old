@@ -183,7 +183,7 @@ static void edit_WallCorrect(struct world_mode *world)
 				midFlag = true;
 			}
 			break;
-		}	
+		} default: INVALID_PATH;	
 		}
 		if(startFlag) {edit_MakePillar(world, AddPoint3(pos, startOffset));}
 		if(endFlag) {edit_MakePillar(world, AddPoint3(pos, endOffset));}
@@ -285,11 +285,11 @@ static void edit_WallPlan(struct world_mode *world)
 		switch(edit->dirLock) {
 		case dirlock_north:	{							
 		} case dirlock_south: {							
-			edit->maxLine = abs(edit->anchorY - pos.y);		
+			edit->maxLine = fabsf(edit->anchorY - pos.y);		
 			break;
 		} case dirlock_east: {							
 		} case dirlock_west: {						
-			edit->maxLine = abs(edit->anchorX - pos.x);						
+			edit->maxLine = fabsf(edit->anchorX - pos.x);						
 			break;
 		} default: 
 			INVALID_PATH;

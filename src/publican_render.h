@@ -101,6 +101,9 @@ struct push_buffer_result {
 enum entry_type {
 	entry_bmp,
 	entry_mesh,
+	entry_composite_surface, 
+	entry_composite_piece, 
+	entry_composite_bmp, 
 	entry_cliprect,
 	entry_rect,
 	entry_blend_target,
@@ -117,7 +120,6 @@ struct render_entry_mesh {
 	struct loaded_mesh *mesh;
 	struct loaded_bmp *bmp;	
 	struct mat4 transform;
-	union vec3 pos;
 };
 
 struct render_entry_bmp {
@@ -130,6 +132,33 @@ struct render_entry_bmp {
 	
 	bool usesAtlas;		
 	struct rect2 atlasOffset;
+};
+
+struct render_entry_bmp_piece {
+	struct loaded_bmp *bmp;
+	union vec3 pos;
+	float zBias;
+	
+	union vec3 xAxis;
+	union vec3 yAxis;
+	
+	uint32_t handle;
+};
+
+struct render_entry_composite {
+	struct loaded_bmp *bmp;
+	union vec3 pos;
+	float zBias;
+	
+	union vec3 xAxis;
+	union vec3 yAxis;
+	
+	void *handle;
+};
+
+struct render_entry_composite_surface {
+	union vec2 dim;
+	void *handle;
 };
 
 struct render_entry_cube {

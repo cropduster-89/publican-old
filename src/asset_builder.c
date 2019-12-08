@@ -118,7 +118,7 @@ extern struct file_read_output win32_ReadFile(char *filename)
 {
 		struct file_read_output result = {};
 		HANDLE handle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 
-									0, OPEN_EXISTING, 0, 0);
+						0, OPEN_EXISTING, 0, 0);
 		if(handle == INVALID_HANDLE_VALUE) {
 				printf("Invalid handle value\n");
 		}		
@@ -254,102 +254,118 @@ static void LoadPLY(struct loaded_mesh *mesh,
 static void GetKerningTable(struct pfile_header *header,
 						    char *fileName)
 {
-		struct loaded_bmp result = {};
-		
-		struct file_read_output TTF_file = win32_ReadFile(fileName);
-		if(TTF_file.contentsSize != 0) {
-				stbtt_fontinfo font;
-				stbtt_InitFont(&font, (uint8_t *)TTF_file.contents, 
-						stbtt_GetFontOffsetForIndex((uint8_t *)TTF_file.contents, 0));	
+	struct loaded_bmp result = {};
+	
+	struct file_read_output TTF_file = win32_ReadFile(fileName);
+	if(TTF_file.contentsSize != 0) {
+			stbtt_fontinfo font;
+			stbtt_InitFont(&font, (uint8_t *)TTF_file.contents, 
+					stbtt_GetFontOffsetForIndex((uint8_t *)TTF_file.contents, 0));	
 
-				for(uint32_t i = '!'; i < '~'; ++i) {
-						for(uint32_t j = '!'; j < '~'; ++j) {
-								header->kerningTable[i - 33][j - 33] =
-								stbtt_GetCodepointKernAdvance(&font, i, j);
-								//printf("%d\n", header->kerningTable[i - 33][j - 33]);
-						}
-				}			
-				
-				VirtualFree(TTF_file.contents, 0, MEM_RELEASE);			
-		} else {
-				printf("Couldn't load font file for kern\n");
-		}		
+			for(uint32_t i = '!'; i < '~'; ++i) {
+					for(uint32_t j = '!'; j < '~'; ++j) {
+							header->kerningTable[i - 33][j - 33] =
+							stbtt_GetCodepointKernAdvance(&font, i, j);
+							//printf("%d\n", header->kerningTable[i - 33][j - 33]);
+					}
+			}			
+			
+			VirtualFree(TTF_file.contents, 0, MEM_RELEASE);			
+	} else {
+			printf("Couldn't load font file for kern\n");
+	}		
 }
 
 static struct loaded_bmp LoadGlyphBMP(struct pfile_header *header,
 									  char *fileName, 
 									  uint32_t codepoint)
 {
-		struct loaded_bmp result = {};
+	struct loaded_bmp result = {};
+	
+	struct file_read_output TTF_file = win32_ReadFile(fileName);
+	if(TTF_file.contentsSize != 0) {
+		stbtt_fontinfo font;
+		stbtt_InitFont(&font, (uint8_t *)TTF_file.contents, 
+			stbtt_GetFontOffsetForIndex((uint8_t *)TTF_file.contents, 0));								
+		uint8_t *monoBmp = stbtt_GetCodepointBitmap(&font, 0, 
+			stbtt_ScaleForPixelHeight(&font, 64.0f), codepoint, 
+			&result.w, &result.h, &result.alignX, &result.alignY);					
 		
-		struct file_read_output TTF_file = win32_ReadFile(fileName);
-		if(TTF_file.contentsSize != 0) {
-				stbtt_fontinfo font;
-				stbtt_InitFont(&font, (uint8_t *)TTF_file.contents, 
-						stbtt_GetFontOffsetForIndex((uint8_t *)TTF_file.contents, 0));								
-				uint8_t *monoBmp = stbtt_GetCodepointBitmap(&font, 0, 
-						stbtt_ScaleForPixelHeight(&font, 64.0f), codepoint, 
-						&result.w, &result.h, &result.alignX, &result.alignY);					
-				
-				result.pitch = result.w * 4;
-				result.data = malloc(result.h * result.pitch);
-				uint8_t *src = monoBmp;
-				uint8_t *destRow = (uint8_t *)result.data + (result.h - 1) * result.pitch;
-				for(int32_t y = 0; y < result.h; ++y) {
-						uint32_t *dest = (uint32_t *)destRow;
-						for(int32_t x = 0; x < result.w; ++x) {
-								uint8_t alpha = *src++;
-								*dest++ = ((alpha << 24) |
-										   (alpha << 16) |
-                                           (alpha <<  8) |
-                                           (alpha <<  0));
-						}
-						destRow -= result.pitch;
-				}					
-				int32_t adv, left;
-				stbtt_GetCodepointHMetrics(&font, codepoint, &adv, &left);				
-				stbtt_FreeBitmap(monoBmp, 0);				
-				VirtualFree(TTF_file.contents, 0, MEM_RELEASE);			
-					
-		} else {
-				printf("Couldn't load font file\n");
-		}		
-		return(result);
+		result.pitch = result.w * 4;
+		result.data = malloc(result.h * result.pitch);
+		uint8_t *src = monoBmp;
+		uint8_t *destRow = (uint8_t *)result.data + (result.h - 1) * result.pitch;
+		for(int32_t y = 0; y < result.h; ++y) {
+			uint32_t *dest = (uint32_t *)destRow;
+			for(int32_t x = 0; x < result.w; ++x) {
+				uint8_t alpha = *src++;
+				*dest++ = ((alpha << 24) |
+					   (alpha << 16) |
+					   (alpha <<  8) |
+					   (alpha <<  0));
+			}
+			destRow -= result.pitch;
+		}					
+		int32_t adv, left;
+		stbtt_GetCodepointHMetrics(&font, codepoint, &adv, &left);				
+		stbtt_FreeBitmap(monoBmp, 0);				
+		VirtualFree(TTF_file.contents, 0, MEM_RELEASE);			
+			
+	} else {
+		printf("Couldn't load font file\n");
+	}		
+	return(result);
 }
 							  
 static void StartType(struct asset_plan *assets,
-					  enum asset_type_id type)
+		      enum asset_type_id type)
 {
-		assert(assets->currentType == 0);
-		
-		assets->currentType = assets->types + type;
-		assets->currentType->id = type;
-		assets->currentType->firstAsset = assets->assetCount;
-		assets->currentType->nextType = assets->currentType->firstAsset;
+	assert(assets->currentType == 0);
+	
+	assets->currentType = assets->types + type;
+	assets->currentType->id = type;
+	assets->currentType->firstAsset = assets->assetCount;
+	assets->currentType->nextType = assets->currentType->firstAsset;
 }
 
 static void EndType(struct asset_plan *assets)
 {
-		assert(assets->currentType);
-		assets->assetCount = assets->currentType->nextType;
-		assets->currentType = 0;
-		assets->index = 0;
+	assert(assets->currentType);
+	assets->assetCount = assets->currentType->nextType;
+	assets->currentType = 0;
+	assets->index = 0;
 }
 
 static struct bmp_id AddBMP(struct asset_plan *assets,
 							char *fileName)
 {
-		assert(assets->currentType);
-		assert(assets->currentType->nextType < ARRAY_COUNT(assets->assets));
+	assert(assets->currentType);
+	assert(assets->currentType->nextType < ARRAY_COUNT(assets->assets));
+	
+	struct bmp_id result = {assets->currentType->nextType++};
+	struct asset_source *src = assets->sources + result.val;
+	struct pfile_asset *asset = assets->assets + result.val;
 		
-		struct bmp_id result = {assets->currentType->nextType++};
-		struct asset_source *src = assets->sources + result.val;
-		struct pfile_asset *asset = assets->assets + result.val;
-			
-		src->format = format_bmp;
-		src->bmp.fileName = fileName;		
-		
-		return(result);
+	src->format = format_bmp;
+	src->bmp.fileName = fileName;		
+	
+	return(result);
+}
+
+static struct string_id AddString(struct asset_plan *assets,
+			          char *text)
+{
+	assert(assets->currentType);
+	assert(assets->currentType->nextType < ARRAY_COUNT(assets->assets));
+	
+	struct string_id result = {assets->currentType->nextType++};
+	struct asset_source *src = assets->sources + result.val;
+	struct pfile_asset *asset = assets->assets + result.val;
+	
+	src->format = format_string;
+	src->string.text = text;		
+	
+	return(result);
 }
 
 static struct mesh_id AddMesh(struct asset_plan *assets,
@@ -402,6 +418,36 @@ int main(void)
 	struct asset_plan *assets = &assets_;
 
 	InitAssetPlan(assets);
+	
+	StartType(assets, ASSET_UPTXT);
+	AddString(assets, "Up\0");
+	EndType(assets);
+	
+	StartType(assets, ASSET_DOWNTXT);
+	AddString(assets, "Down\0");
+	EndType(assets);
+	
+	StartType(assets, ASSET_BUILDTXT);
+	AddString(assets, "Build\0");
+	EndType(assets);
+	
+	StartType(assets, ASSET_THIRSTTXT);
+	AddString(assets, "Thirst\0");
+	EndType(assets);
+	
+	StartType(assets, ASSET_DRUNKTXT);
+	AddString(assets, "Drunk\0");
+	EndType(assets);
+	
+	StartType(assets, ASSET_BLADDERTXT);
+	AddString(assets, "Bladder\0");
+	EndType(assets);
+	
+	StartType(assets, asset_floor);
+	AddBMP(assets, "data/struct/floor_mud.tga");
+	AddBMP(assets, "data/struct/floor_wood.tga");		
+	AddMesh(assets, "data/struct/floor.ply");
+	EndType(assets);
 	
 	StartType(assets, asset_floor);
 	AddBMP(assets, "data/struct/floor_mud.tga");
@@ -482,7 +528,7 @@ int main(void)
 	StartType(assets, asset_font);
 	
 	for(uint32_t i = '!'; i < '~'; ++i) {
-		AddChar(assets, "C:/Windows/Fonts/isocpeur.ttf", i);
+		AddChar(assets, "C:/Windows/Fonts/tahoma.ttf", i);
 		totalGlyphs = i - 33;
 	}	
 	EndType(assets);
@@ -501,7 +547,7 @@ int main(void)
 		stbi_set_flip_vertically_on_load(1);
 		
 		struct pfile_header header = {};
-		header.name = PUBdir_northAME;			
+		header.name = ASSET_FILEEXT;			
 		header.typeCount = asset_count;
 		header.assetCount = assets->assetCount;				
 		
@@ -511,32 +557,32 @@ int main(void)
 		header.types = sizeof(struct pfile_header);
 		header.assets = header.types + assetTypeArraySize;
 		
-		GetKerningTable(&header, "c:/Windows/Fonts/isocpeur.ttf");
+		GetKerningTable(&header, "c:/Windows/Fonts/tahoma.ttf");
 		
 		fwrite(&header, sizeof(header), 1, out);					
 		fwrite(&assets->types, assetTypeArraySize, 1, out);	
 		fseek(out, assetArraySize, SEEK_CUR);
-		for(uint32_t i = 1; i < header.assetCount; ++i) {
+		for(uint32_t i = 1; i < header.assetCount; ++i) 
+		{
 			struct asset_source *source = assets->sources + i;
 			struct pfile_asset *dest = assets->assets + i;
 			
-			dest->offset = ftell(out);
+			dest->offset = ftell(out);			
 			
-			
-			if(source->format == format_bmp) {
+			if(source->format == format_bmp) 
+			{
 				struct loaded_bmp bmp;
 				int c;							
 				bmp.data = stbi_load(source->bmp.fileName, &bmp.w, &bmp.h, &c, 0);
-				if(!bmp.data) {
-					printf("%s \n", source->bmp.fileName);
-				}
 				assert(bmp.data);
 				bmp.pitch = bmp.w * 4;
 				dest->bmp.x = bmp.w;
 				dest->bmp.y = bmp.h;
 				fwrite(bmp.data, bmp.w * bmp.h * 4, 1, out);
 				stbi_image_free(bmp.data);								
-			} else if(source->format == format_mesh) {
+			} 
+			else if(source->format == format_mesh) 
+			{
 				struct loaded_mesh mesh;
 				LoadPLY(&mesh, source->mesh.fileName);	
 				assert(mesh.data);	
@@ -545,10 +591,12 @@ int main(void)
 				
 				if(fwrite(mesh.data, (_32BIT * mesh.faceCount * FACE_STRIDE + 
 				_32BIT * mesh.vertexCount * VERTEX_STRIDE), 1, out) != 1) {
-					printf("fwrite error for current mesh\n");
+					assert(0);
 				}
 				free(mesh.data);			
-			} else {
+			} 
+			else if(source->format == format_font) 
+			{
 				struct loaded_bmp bmp;
 				bmp = LoadGlyphBMP(&header, source->glyph.fileName, 
 								   source->glyph.codepoint);
@@ -559,6 +607,15 @@ int main(void)
 				
 				fwrite(bmp.data, bmp.w * bmp.h * 4, 1, out);
 				free(bmp.data);
+			} 
+			else if(source->format == format_string) 
+			{
+				struct loaded_string string;
+				dest->string.size = strlen(source->string.text);
+				string.data = malloc(dest->string.size);
+				strcpy(string.data, source->string.text);
+				fwrite(string.data, dest->string.size, 1, out);
+				free(string.data);
 			}
 		}
 		fseek(out, (uint32_t)header.assets, SEEK_SET);
