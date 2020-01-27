@@ -290,7 +290,7 @@ static struct loaded_bmp LoadGlyphBMP(struct pfile_header *header,
 		uint8_t *monoBmp = stbtt_GetCodepointBitmap(&font, 0, 
 			stbtt_ScaleForPixelHeight(&font, 64.0f), codepoint, 
 			&result.w, &result.h, &result.alignX, &result.alignY);					
-		
+		printf("%d, %d\n", result.w, result.h);
 		result.pitch = result.w * 4;
 		result.data = malloc(result.h * result.pitch);
 		uint8_t *src = monoBmp;

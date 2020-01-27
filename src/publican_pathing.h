@@ -60,4 +60,8 @@ struct node_list {
 	uint32_t length;
 };
 
+struct entity_char;
+struct world_mode;
+struct node_list *path_GetPath(struct point3, struct point3, struct entity_char *, struct world_mode *, struct node_list *);
+
 #endif

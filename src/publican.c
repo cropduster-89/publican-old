@@ -10,11 +10,11 @@ __________     ___.   .__  .__
 
 #include "publican.h"
 
-extern void pub_MainLoop(struct pub_memory *memory, 
-			 struct pub_input *input,						
-			 struct render_commands *commands)
+extern void pub_MainLoop(
+	struct pub_memory *memory, 
+	struct pub_input *input,						
+	struct render_commands *commands)
 {
-	platform = memory->platformAPI;
 #ifdef DEBUG		
 	debugMemory = memory;
 #endif			
@@ -32,9 +32,9 @@ extern void pub_MainLoop(struct pub_memory *memory,
 			tState->lowPriorityQueue = memory->lowPriorityQueue;
 			struct task_with_memory *task = tState->tasks + i;
 			task->inUse = false;						
-		}				
-		tState->assets = assets_Allocate(MEGABYTES(256), 
-			tState, &memory->textureOpQueue); 		
+		}
+#define ASSET_MEMORY_SIZE_MB MEGABYTES(256)		
+		tState->assets = assets_Allocate(ASSET_MEMORY_SIZE_MB, tState, &memory->textureOpQueue); 		
 	}		 
 		
 	struct loaded_bmp drawBuffer = {};		

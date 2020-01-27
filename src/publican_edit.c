@@ -252,7 +252,7 @@ extern void edit_WallPlace(struct world_mode *world)
 }
 
 /*
-*		Display position of the walls not yet built. 
+*	Display position of the walls not yet built. 
 */
 
 static void edit_WallPlan(struct world_mode *world)

@@ -18,10 +18,10 @@ static inline struct push_buffer_result PushBuffer(struct render_group *group,
 	
 	uint8_t *pushBufferEnd = commands->pushBase + commands->maxPushSize;
 	if((commands->pushData + dataSize) <= pushBufferEnd) {				
-			result.header = (struct render_entry_header *)commands->pushData;
-			commands->pushData += dataSize;
+		result.header = (struct render_entry_header *)commands->pushData;
+		commands->pushData += dataSize;
 	} else {
-			INVALID_PATH;
+		INVALID_PATH;
 	}
 	return(result);
 }

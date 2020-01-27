@@ -23,8 +23,6 @@ struct pub_stats {
 	float safety;
 	float sheek;
 	float guildRep; 
-	
-	
-	
+		
 	int32_t money;
 };

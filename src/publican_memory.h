@@ -45,15 +45,15 @@ static inline size_t GetAlignOffset(struct memory_arena *arena,
 #define DEF_PUSH (DefaultPushParams_())
 extern struct arena_push_params DefaultPushParams_(void)
 {
-		struct arena_push_params params = {};
-		params.flags = 0x1;
-		params.align = 4;
-		return(params);
+	struct arena_push_params params = {};
+	params.flags = 0x1;
+	params.align = 4;
+	return(params);
 }
 
 struct arena_boot_params {
-		uint64_t allocationFlags;
-		uintptr_t minBlockSize;
+	uint64_t allocationFlags;
+	uintptr_t minBlockSize;
 };
 
 #define DEF_BOOT (DefaultBootParams_())
@@ -126,32 +126,32 @@ static inline void *Copy(size_t size,
 			 void 	*sourceInit,
 			 void	*destInit)
 {
-		uint8_t *source = (uint8_t *)sourceInit;
-		uint8_t *dest = (uint8_t *)destInit;
-		while(size--) {
-			*dest++ = *source++;
-		}
-		return(destInit);
+	uint8_t *source = (uint8_t *)sourceInit;
+	uint8_t *dest = (uint8_t *)destInit;
+	while(size--) {
+		*dest++ = *source++;
+	}
+	return(destInit);
 }
 
 static inline struct temp_memory BeginTempMem(struct memory_arena *arena)
 {
-		struct temp_memory result;
-		
-		result.arena = arena;
-		result.block = arena->currentBlock;
-		result.used = arena->currentBlock ? arena->currentBlock->used : 0;
-		
-		++arena->tempCount;
+	struct temp_memory result;
+	
+	result.arena = arena;
+	result.block = arena->currentBlock;
+	result.used = arena->currentBlock ? arena->currentBlock->used : 0;
+	
+	++arena->tempCount;
 
-		return(result);	
+	return(result);	
 }
 
 static inline void FreeLastBlock(struct memory_arena *arena)
 {
-		struct platform_memory_block *free = arena->currentBlock;
-		arena->currentBlock = free->arenaPrev;
-		platform.DeAlloc(free);
+	struct platform_memory_block *free = arena->currentBlock;
+	arena->currentBlock = free->arenaPrev;
+	platform.DeAlloc(free);
 }
 
 static inline void EndTempMem(struct temp_memory temp)

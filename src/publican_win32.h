@@ -1,8 +1,15 @@
+#pragma once
 #ifndef PUB_WIN32_H
 #define PUB_WIN32_H
-/*************************************************************************************************
-		Win32 Platform layer Header
-*************************************************************************************************/
+
+/************************************************************************************		
+__________     ___.   .__  .__                      	
+\______   \__ _\_ |__ |  | |__| ____ _____    ____  
+ |     ___/  |  \ __ \|  | |  |/ ___\\__  \  /    \ 	win32 platform header
+ |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
+ |____|   |____/|___  /____/__|\___  >____  /___|  /
+                    \/             \/     \/     \/ 			
+*************************************************************************************/
 
 struct win32_file_handle {
 	HANDLE win32Handle;
@@ -49,27 +56,19 @@ struct platform_work_queue {
 struct win32_thread_startup {
 	struct platform_work_queue *queue;		
 };
-/*************************************************************************************************
-		Win32 WGL Guff
-*************************************************************************************************/
 
 #define GL_FRAMEBUFFER_SRGB               0x8DB9
 #define GL_SRGB8_ALPHA8                   0x8C43
 
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 
-
-
-// NOTE(casey): Windows-specific
-
-
 int win32_OpenGLAttribs[] =
 {
-    WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-    WGL_CONTEXT_MINOR_VERSION_ARB, 5,
-    WGL_CONTEXT_FLAGS_ARB, 0,
-    WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
-    0,
+	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+	WGL_CONTEXT_MINOR_VERSION_ARB, 5,
+	WGL_CONTEXT_FLAGS_ARB, 0,
+	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+	0,
 };
 
 #endif

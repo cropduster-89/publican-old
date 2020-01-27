@@ -89,8 +89,8 @@ static void _ui_ChangeState(struct ui_element elements[],
 
 /*		
 *	Init all ui elements up front.
-*	Looks like shit, but tbh probably the best way.		
-*		
+*	Looks like shit, but tbh probably the best way	
+*	without baking it into assets/external files (good idea?)	
 */
 static void ui_InitWorldUI(struct world_mode *world,
 			   struct render_group *group)
@@ -350,34 +350,24 @@ extern bool ui_WorldMode(struct world_mode *world,
 		if(!ElementIsVisible(element)) {continue;} 
 		
 		switch(element->type) {
-		case UITYPE_PANEL: 
-		{
+		case UITYPE_PANEL: {
 			DrawPanel(group, element);
 			break;
-		} 
-		case UITYPE_TEXTBUTTON: 
-		{
+		} case UITYPE_TEXTBUTTON: {
 			DrawTextButton(group, element, tState,
 				asset_FindString(tState->assets, 
 				element->textButton.text));
 			break;
-		} 
-		case UITYPE_STATIC_LABEL: 
-		{
+		} case UITYPE_STATIC_LABEL: {
 			DrawStaticLabel(group, element, tState,
 				asset_FindString(tState->assets, 
 				element->textButton.text));
 			break;
-		}
-		case UITYPE_DYNAMIC_LABEL: 
-		{
+		} case UITYPE_DYNAMIC_LABEL: {
 			DrawDynamicLabel(world, group, element, tState);
 			break;
-		}
-		case UITYPE_BAR: 
-		{			
-			if(IsNeedsBar(element)) 
-			{
+		} case UITYPE_BAR: {			
+			if(IsNeedsBar(element)) {
 				float ammountFull = GetNeedsBarVal(world, element);
 				union vec2 drawLength = {
 					.x = element->dim.x * ammountFull,
@@ -393,8 +383,7 @@ extern bool ui_WorldMode(struct world_mode *world,
 		{
 			result = true;
 			if(element->type == UITYPE_TEXTBUTTON && 
-			   input->buttons.lClick.endedDown) 
-			{
+			   input->buttons.lClick.endedDown) {
 				assert(element->callback);
 				element->callback(world, element->alias);
 				input->buttons.lClick.endedDown = false;

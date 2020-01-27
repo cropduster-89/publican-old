@@ -98,6 +98,11 @@ struct platform_file_group {
 	void *platform;
 };
 
+struct file_read_output {
+	uint32_t contentsSize;
+	void *contents;
+};
+
 enum platform_file_type {
 	filetype_asset,
 	filetype_count,

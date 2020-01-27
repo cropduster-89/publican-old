@@ -1,6 +1,13 @@
-/*************************************************************************************************
-		OpenGL Specific Code
-*************************************************************************************************/
+/************************************************************************************		
+__________     ___.   .__  .__                      	
+\______   \__ _\_ |__ |  | |__| ____ _____    ____  
+ |     ___/  |  \ __ \|  | |  |/ ___\\__  \  /    \ 	OpenGL Renderer
+ |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
+ |____|   |____/|___  /____/__|\___  >____  /___|  /
+                    \/             \/     \/     \/ 
+		    @TODO move all non opengl stuff out to render.c
+		    @TODO get better at OpenGL
+*************************************************************************************/
 
 static uint32_t globalFrameBufferCount = 0;
 static GLuint globalFrameBufferHandles[256] = {0};
@@ -156,7 +163,6 @@ static struct gl_info gl_GetInfo(bool modernContext)
 		result.slVersion = "(none)";
 	}
 	result.ext = (char *)glGetString(GL_EXTENSIONS);
-	//printf("%s\n", result.ext);
 	for(char *at = result.ext; *at; ) {
 		while(IsWhitespace(*at)) {++at;}
 		char *end = at;
@@ -166,17 +172,13 @@ static struct gl_info gl_GetInfo(bool modernContext)
 		
 		if(0) {
 		} else if(StringsAreEqual(count, at, "GL_EXT_texture_sRGB")) {
-			result.GL_EXT_texture_sRGB = true;
-			printf("GL_EXT_texture_sRGB\n");
+			result.GL_EXT_texture_sRGB = true;			
 		} else if(StringsAreEqual(count, at, "GL_EXT_framebuffer_sRGB")) {
 			result.GL_EXT_framebuffer_sRGB = true;
-			printf("GL_EXT_framebuffer_sRGB\n");
 		} else if(StringsAreEqual(count, at, "GL_ARB_framebuffer_sRGB")) {
 			result.GL_ARB_framebuffer_sRGB = true;
-			printf("GL_ARB_framebuffer_sRGB\n");
 		} else if(StringsAreEqual(count, at, "GL_ARB_framebuffer_object")) {
 			result.GL_ARB_framebuffer_object = true;
-			printf("GL_ARB_framebuffer_object\n");
 		}
 		at = end;				
 	}
@@ -219,8 +221,6 @@ static GLuint gl_CreateProgram(const char **vertexShader, const char **fragmentS
 	GLint linked = 0;
 	glGetProgramiv(programID, GL_LINK_STATUS, &linked);
 	if(!linked) {
-		printf("shader compilation failed\n");
-
 		GLsizei ignored;
 		char vsErrors[4096];				
 		char fsErrors[4096];				
@@ -228,9 +228,7 @@ static GLuint gl_CreateProgram(const char **vertexShader, const char **fragmentS
 		glGetShaderInfoLog(vs_ID, sizeof(vsErrors), &ignored, vsErrors);	
 		glGetShaderInfoLog(fs_ID, sizeof(fsErrors), &ignored, fsErrors);	
 		glGetProgramInfoLog(programID, sizeof(pgErrors), &ignored, pgErrors);
-		printf("Vertex Shader: %s\n", vsErrors);	
-		printf("Fragment Shader: %s\n", fsErrors);	
-		printf("Program: %s\n", pgErrors);	
+		INVALID_PATH;	
 	}
 	return(programID);
 }
@@ -254,24 +252,24 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"#version 450 core							\n"
 		"layout (location = 0) in vec3 inPos;					\n"
 		"layout (location = 1) in vec3 inNormal;				\n"
-		"layout (location = 2) in vec2 inUV;					\n"		
+		"layout (location = 2) in vec2 inUV;					\n"
 		"layout (location = 3) in int inArrayID;				\n"
 		"layout (location = 4) in mat4 model;					\n"
 		"									\n"
 		"out vec2 uv;								\n"
 		"out vec3 normal;							\n"
-		"out vec3 pos;								\n"		
-		"flat out int arrayID;							\n"		
+		"out vec3 pos;								\n"
+		"flat out int arrayID;							\n"
 		"									\n"
 		"layout (location = 1) uniform mat4 proj; 				\n"
-		"uniform vec3 canonPos;							\n"		
+		"uniform vec3 canonPos;							\n"
 		"									\n"
 		"void main(void) {							\n"
 		"	gl_Position = proj * model * vec4(inPos, 1.0f);			\n"
-		"	pos = (model * gl_Position).xyz;							\n"
+		"	pos = (model * gl_Position).xyz;				\n"
 		"	arrayID = inArrayID;						\n"
-		"	uv = inUV;							\n"			
-		"	normal = (model * vec4(inNormal, 0.0f)).xyz;			\n"			
+		"	uv = inUV;							\n"
+		"	normal = (model * vec4(inNormal, 0.0f)).xyz;			\n"
 		"}									\n"
 	};
 	
@@ -284,9 +282,9 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"in vec3 pos;								\n"
 		"flat in int arrayID;							\n"
 		"									\n"
-		"layout (location = 0) uniform sampler2DArray texture1;						\n"
+		"layout (location = 0) uniform sampler2DArray texture1;			\n"
 		"uniform vec3 mouseP;							\n"
-		"									\n"			
+		"									\n"
 		"void main(void) {							\n"
 		"	float ambientLight = 1.2;					\n"
 		"									\n"
@@ -298,13 +296,13 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"	vec3 lightCol = vec3(1, 0.95, 0.8);				\n"
 		"									\n"
 		"	float diff = max(dot(norm, lightDir), 0.0);			\n"
-		"	vec3 diffuse = (diff * lightCol) * stren;			\n"		
+		"	vec3 diffuse = (diff * lightCol) * stren;			\n"
 		"									\n"
 		"	fragColour = texture(texture1, vec3(uv, arrayID));		\n"
 		"	vec3 result = (ambientLight + diffuse); 			\n"
 		"									\n"
 		"									\n"
-		"									\n"               
+		"									\n"
 		"	fragColour.rgb = fragColour.rgb * result;			\n"
 		"}									\n"
 	};
@@ -366,7 +364,7 @@ extern struct gl_info gl_Init(struct gl_info info,
 		"void main(void) {							\n"
 		"	entColour = inColour;						\n"
 		"	gl_Position = projection * vec4(inPos, 1.0f);			\n"			
-		"}															\n"
+		"}									\n"
 	};
 	
 	static const char *fs_Colour[] = {				
@@ -476,8 +474,7 @@ static void *gl_AddToTexArray(void *data)
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);	
 	
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP);	
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP);		
-	printf("add texture\n");
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	assert(!gl_GetError());
 	void *result = PointerFromU32(void, glRuntime.texArray);
 	return(result);	
@@ -527,12 +524,10 @@ static void gl_MultiRenderMesh(void)
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 
 		8 * sizeof(float), (void *)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2); 	
-	assert(!gl_GetError());	    	        			
-	
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glRuntime.indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, rState->elementOffset * _32BIT,
 		rState->elementData, GL_STATIC_DRAW);
-	assert(!gl_GetError());	
 	
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, glRuntime.indirectBuffer);
 	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(struct gl_mesh_render_command) *
@@ -544,7 +539,6 @@ static void gl_MultiRenderMesh(void)
 	glEnableVertexAttribArray(3);	
 	glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(uint32_t), (void * )0);
 	glVertexAttribDivisor(3, 1);
-	assert(!gl_GetError());		
 	
 	glBindBuffer(GL_ARRAY_BUFFER, glRuntime.transformBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(struct mat4) * meshes, 
@@ -561,20 +555,15 @@ static void gl_MultiRenderMesh(void)
 	glVertexAttribDivisor(4 + 1, 1);
 	glVertexAttribDivisor(4 + 2, 1);
 	glVertexAttribDivisor(4 + 3, 1);
-	assert(!gl_GetError());		
 	
 	glUseProgram(glRuntime.normal);	 
 	glUniformMatrix4fv(1, 1, GL_TRUE, &glRuntime.proj.e[0][0]);
-	
-	assert(!gl_GetError());	
 	glUniform3fv(glGetUniformLocation(glRuntime.normal, "mouseP"), 
 					1, glRuntime.mouse);
-	assert(!gl_GetError());
+
 	glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)U32FromPointer(glRuntime.texArray));
-	assert(!gl_GetError());
 	
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, meshes, 0);
-	assert(!gl_GetError());
 }
 
 extern void gl_Output(struct render_commands *commands,			      
@@ -769,9 +758,7 @@ extern void gl_Output(struct render_commands *commands,
 				glUniformMatrix4fv(glGetUniformLocation(glRuntime.colour, "projection"), 
 					1, GL_TRUE, &setup->proj.e[0][0]);
 												
-				glDrawArrays(GL_TRIANGLES, 0, 6);
-				
-												
+				glDrawArrays(GL_TRIANGLES, 0, 6);								
 				break;
 				
 			} case entry_cube: {
@@ -795,10 +782,10 @@ extern void gl_Output(struct render_commands *commands,
 				union vec3 p7 = {.x = nX, .y = pY, .z = nZ};				
 				
 				const union vec4 entColour = {
-						.r = (float)(cube->colour & 0xFF) / 255.0f,
-						.g = (float)((cube->colour >> 8) & 0xFF) / 255.0f,
-						.b = (float)((cube->colour >> 16) & 0xFF) / 255.0f,
-						.a = (float)((cube->colour >> 24) & 0xFF) / 255.0f,										
+					.r = (float)(cube->colour & 0xFF) / 255.0f,
+					.g = (float)((cube->colour >> 8) & 0xFF) / 255.0f,
+					.b = (float)((cube->colour >> 16) & 0xFF) / 255.0f,
+					.a = (float)((cube->colour >> 24) & 0xFF) / 255.0f,										
 				};
 				float vertices[] = {
 					//
@@ -857,7 +844,7 @@ extern void gl_Output(struct render_commands *commands,
 				glBindVertexArray(glRuntime.VAO[render_program_colour]);		
 																
 				glUniformMatrix4fv(glGetUniformLocation(glRuntime.colour, "projection"), 
-														1, GL_TRUE, &setup->proj.e[0][0]);
+					1, GL_TRUE, &setup->proj.e[0][0]);
 				
 				
 				glDrawArrays(GL_TRIANGLES, 0, 6 * 6);
@@ -910,12 +897,10 @@ extern void gl_Output(struct render_commands *commands,
 				glBindVertexArray(glRuntime.VAO[render_program_sprite]);                
 												
 				glUniformMatrix4fv(glGetUniformLocation(glRuntime.sprite, "projection"), 
-					1, GL_TRUE, &setup->proj.e[0][0]);
-				
+					1, GL_TRUE, &setup->proj.e[0][0]);				
 				
 				glUniform1f(glGetUniformLocation(glRuntime.sprite, "zBias"), 
-					entry->zBias);
-				
+					entry->zBias);				
 				
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 				
@@ -923,55 +908,53 @@ extern void gl_Output(struct render_commands *commands,
 				
 			} 
 			case entry_mesh: 
-			{				
+			{
 				headerAt += sizeof(struct render_entry_mesh);
 				if(glRuntime.rState->meshCount == MAX_MESHCOMMAND - 1) break;
-				struct render_entry_mesh *entry = (struct render_entry_mesh *)data;								
+				struct render_entry_mesh *entry = (struct render_entry_mesh *)data;
 				assert(entry->mesh);
-				assert(entry->bmp);				
-				
+				assert(entry->bmp);
+
 				int32_t i = glRuntime.rState->meshCount;
-				
+
 				glRuntime.proj = setup->proj; //do this somehwere else
-				
+
 				assert(i < MAX_MESHCOMMAND);
 				uint32_t vertexCount = entry->mesh->vertexCount;
 				uint32_t vertexSize = vertexCount * VERTEX_STRIDE;
-				uint32_t elementCount = entry->mesh->faceCount * FACE_STRIDE;				
+				uint32_t elementCount = entry->mesh->faceCount * FACE_STRIDE;
 				assert(glRuntime.rState->vertexOffset + vertexSize < ARRAY_COUNT(glRuntime.rState->vertexData));
 				assert(glRuntime.rState->elementOffset + elementCount < ARRAY_COUNT(glRuntime.rState->elementData));
 				
 				float *vertexSrc = (float *)entry->mesh->data;
-				float *vertexDest = glRuntime.rState->vertexData + glRuntime.rState->vertexOffset;				
+				float *vertexDest = glRuntime.rState->vertexData + glRuntime.rState->vertexOffset;
 				memcpy(vertexDest, vertexSrc, vertexSize * _32BIT);
 
 				uint32_t *elementSrc = (uint32_t *)entry->mesh->data + vertexSize;
-				uint32_t *elementDest = glRuntime.rState->elementData + glRuntime.rState->elementOffset;							
+				uint32_t *elementDest = glRuntime.rState->elementData + glRuntime.rState->elementOffset;
 				memcpy(elementDest, elementSrc, elementCount * _32BIT);	
-								
+
 				struct gl_mesh_render_command *commands = &glRuntime.rState->meshCommands[i];
 				commands->vertexCount = elementCount;
 				commands->instanceCount = 1;
-				commands->firstIndex = glRuntime.rState->elementOffset;		
-				commands->baseVertex = glRuntime.rState->vertexCount;	
+				commands->firstIndex = glRuntime.rState->elementOffset;
+				commands->baseVertex = glRuntime.rState->vertexCount;
 				commands->baseInstance = i;
-				
-				glRuntime.rState->elementOffset += elementCount;	
-				glRuntime.rState->elementCount += elementCount;	
-				glRuntime.rState->vertexOffset += vertexSize;	
-				glRuntime.rState->vertexCount += vertexCount;	
-												
+
+				glRuntime.rState->elementOffset += elementCount;
+				glRuntime.rState->elementCount += elementCount;
+				glRuntime.rState->vertexOffset += vertexSize;
+				glRuntime.rState->vertexCount += vertexCount;
+
 				glRuntime.rState->transforms[i] = Transpose(entry->transform);
 				glRuntime.rState->texArrayOffsets[i] = entry->bmp->arrayOffset;
-									
-				assert(!gl_GetError());					
 				glRuntime.rState->meshCount++;
-				break;					
+				break;
 			} 
 			default: INVALID_PATH;
-			}	
-		}							
-	}	
+			}
+		}
+	}
 	if(glRuntime.rState->meshCount) {gl_MultiRenderMesh();}					
 			
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, globalFrameBufferHandles[0]);		
@@ -1002,4 +985,33 @@ extern void gl_ManageTextures(struct texture_op *first)
 			glDeleteTextures(1, &handle);
 		}
 	}
+}
+
+extern void gl_InitTextureLoadQueue(
+	struct platform_texture_op_queue *textureOpQueue,
+	uint32_t textureOpCount)
+{
+	for(uint32_t i = 0; i < (textureOpCount - 1); ++i) {
+		struct texture_op *op = textureOpQueue->firstFree + i;
+		op->next = textureOpQueue->firstFree + i + 1;
+	}	
+} 
+
+extern void gl_ProcessTextureLoad(
+	struct platform_texture_op_queue *textureOpQueue)
+{
+	BeginTicketMutex(&textureOpQueue->mutex);
+	struct texture_op *firstTextureOp = textureOpQueue->first;
+	struct texture_op *lastTextureOp = textureOpQueue->last;
+	textureOpQueue->last = textureOpQueue->first = 0;
+	EndTicketMutex(&textureOpQueue->mutex);
+	
+	if(firstTextureOp) {
+		assert(lastTextureOp);
+		gl_ManageTextures(firstTextureOp);
+		BeginTicketMutex(&textureOpQueue->mutex);
+		lastTextureOp->next = textureOpQueue->firstFree;
+		textureOpQueue->firstFree = firstTextureOp;
+		EndTicketMutex(&textureOpQueue->mutex);
+	}	
 }
