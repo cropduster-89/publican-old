@@ -20,10 +20,10 @@ extern void debug_TextOut(char *string,
 	float prevSizeX = 0;
 	for(uint32_t i = 0; i < len; ++i, ++current) {
 		if(*current == ' ') {
-			trans.offset.x += 15;
+			trans.offset.x += 15 * scale;
 			continue;
 		} else if(*current == '\n') {
-			offset.y -= lineWeight;
+			offset.y -= lineWeight * scale;;
 		} else if(*current == '\0') {
 			break;
 		}		
@@ -77,7 +77,7 @@ extern void debug_OutputCycles(struct pub_memory *memory,
 			counter->cycleCount = 0;
 			counter->hitCount = 0;
 			
-			debug_TextOut(buffer,group, tState, 10 + i,	0.3f);
+			debug_TextOut(buffer,group, tState, 10 + i, 0.25f);
 		}
 	}
 #endif		

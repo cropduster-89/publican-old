@@ -83,25 +83,9 @@ struct memory_arena tempArena;
 //static platform_add_entry *platformAddEntry;
 //static platform_complete_all_work *platformCompleteAllWork;
 
-struct pub_graphics_buffer {
-	void *data;
-	int32_t x;
-	int32_t y;
-	int32_t pitch;
-	int32_t stride;
-};
-
 #define MAX_VERTEX 0xFFFFF
 #define MAX_ELEMENT 0xFFFFF
 #define MAX_MESHCOMMAND 0xFFFF
-
-struct gl_mesh_render_command {
-	GLuint vertexCount;
-	GLuint instanceCount;
-	GLuint firstIndex;
-	GLuint baseVertex;
-	GLuint baseInstance;	
-};
 
 struct render_state {
 	struct memory_arena arena;

@@ -1,4 +1,15 @@
 #pragma once
+#ifndef PUB_RENDER_H
+#define PUB_RENDER_H
+
+/************************************************************************************		
+__________     ___.   .__  .__                      	Render header
+\______   \__ _\_ |__ |  | |__| ____ _____    ____  
+ |     ___/  |  \ __ \|  | |  |/ ___\\__  \  /    \ 
+ |    |   |  |  / \_\ \  |_|  \  \___ / __ \|   |  \
+ |____|   |____/|___  /____/__|\___  >____  /___|  /
+                    \/             \/     \/     \/ 			
+*************************************************************************************/
 
 enum sprite_elements {
 	sprite_body,
@@ -79,9 +90,9 @@ struct render_group {
 
 	union vec2 screenDim;		
 			
-	struct render_commands *commands;
-	
+	struct render_commands *commands;	
 	struct render_setup lastSetup;
+	struct render_entry_mesh_batch *meshBatch;
 	
 	union vec3 camX;
 	union vec3 camY;
@@ -101,6 +112,7 @@ struct push_buffer_result {
 enum entry_type {
 	entry_bmp,
 	entry_mesh,
+	entry_mesh_batch,
 	entry_composite_surface, 
 	entry_composite_piece, 
 	entry_composite_bmp, 
@@ -114,6 +126,10 @@ enum entry_type {
 struct render_entry_header {
 	struct render_setup setup;	
 	uint16_t type;	
+};
+
+struct render_entry_mesh_batch {
+	uint32_t meshCount;
 };
 
 struct render_entry_mesh {
@@ -145,22 +161,6 @@ struct render_entry_bmp_piece {
 	uint32_t handle;
 };
 
-struct render_entry_composite {
-	struct loaded_bmp *bmp;
-	union vec3 pos;
-	float zBias;
-	
-	union vec3 xAxis;
-	union vec3 yAxis;
-	
-	void *handle;
-};
-
-struct render_entry_composite_surface {
-	union vec2 dim;
-	void *handle;
-};
-
 struct render_entry_cube {
 	struct loaded_bmp *bmp;
 	
@@ -187,3 +187,54 @@ struct render_entry_blend_target {
 	float alpha;
 };
 
+struct gl_mesh_render_command {
+	uint32_t vertexCount;
+	uint32_t instanceCount;
+	uint32_t firstIndex;
+	uint32_t baseVertex;
+	uint32_t baseInstance;	
+};
+
+struct render_commands {
+	int32_t w;
+	int32_t h;
+	
+	uint32_t maxPushSize;
+	uint32_t entryCount;
+	uint8_t *pushBase;		
+	uint8_t *pushData;	
+	/*
+	*	Data for multi draw meshes
+	*	Prepare for this not being big enough
+	*/
+	struct gl_mesh_render_command *meshCommands;
+	uint32_t meshCount;
+	uint32_t *texArrayOffsets;
+	struct mat4 *transforms;
+	
+	uint32_t maxVertexSize;
+	uint32_t vertexCount;
+	uint8_t *vertexBase;
+	uint8_t *vertexData;
+	
+	uint32_t maxElementSize;
+	uint32_t elementCount;	
+	uint8_t *elementBase;
+	uint8_t *elementData;
+	/*
+	*	TODO: is this currently being used properly?
+	*/
+	uint32_t clipRectCount;
+	uint32_t maxRenderTargetIndex;
+	
+	struct render_entry_cliprect *firstRect;
+	struct render_entry_cliprect *lastRect;
+};	
+
+struct render_prep {
+	struct render_entry_cliprect *clipRects;
+	uint32_t sortedIndexCount;
+	uint32_t sortedIndices;
+};
+
+#endif

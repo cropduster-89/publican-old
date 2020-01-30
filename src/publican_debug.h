@@ -8,7 +8,8 @@ enum cycle_counters {
 		debug_render_mesh,
 		debug_render_loop,
 		debug_ai,
-		debug_count,
+		debug_push_mesh,
+		debug_count,		
 };
 
 struct cycle_counter {

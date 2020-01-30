@@ -238,9 +238,6 @@ extern struct gl_info gl_Init(struct gl_info info,
 			      bool SRGBSupported,
 			      struct pub_memory *memory)
 {
-	glRuntime.rState = memory->rState = BootStrapPushSize(struct render_state, arena, 
-		DEF_BOOT, DEF_PUSH);
-	
 	OpenGLDefaultInternalTextureFormat = GL_RGBA8;
 	if(SRGBSupported && info.GL_EXT_texture_sRGB && info.GL_EXT_framebuffer_sRGB) {
 			OpenGLDefaultInternalTextureFormat = GL_SRGB8_ALPHA8;
@@ -503,17 +500,16 @@ static void *gl_AllocateTexture(uint32_t w, uint32_t h, void *data)
 	return(result);
 }
 
-static void gl_MultiRenderMesh(void)
+static void gl_MultiRenderMesh(
+	struct render_commands *commands)
 {
-	struct render_state *rState = glRuntime.rState;
-	int32_t meshes = rState->meshCount;
+	int32_t meshes = commands->meshCount;
 	
 	glBindVertexArray(glRuntime.VAO[render_program_mesh]);	
-	assert(!gl_GetError());	
-	
+		
 	glBindBuffer(GL_ARRAY_BUFFER, glRuntime.vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, rState->vertexOffset * _32BIT,
-		rState->vertexData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, (size_t)(commands->vertexData - commands->vertexBase),
+		commands->vertexBase, GL_STATIC_DRAW);
 		
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 
 		8 * sizeof(float), (void *)0);		
@@ -526,23 +522,23 @@ static void gl_MultiRenderMesh(void)
 	glEnableVertexAttribArray(2); 	
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glRuntime.indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, rState->elementOffset * _32BIT,
-		rState->elementData, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, (size_t)(commands->elementData - commands->elementBase),
+		commands->elementBase, GL_STATIC_DRAW);
 	
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, glRuntime.indirectBuffer);
 	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(struct gl_mesh_render_command) *
-		meshes, rState->meshCommands, GL_DYNAMIC_DRAW);	
+		meshes, commands->meshCommands, GL_DYNAMIC_DRAW);	
 		
 	glBindBuffer(GL_ARRAY_BUFFER, glRuntime.texOffsetBuffer);
 	glBufferData(GL_ARRAY_BUFFER, meshes * _32BIT,
-		rState->texArrayOffsets, GL_STATIC_DRAW);
+		commands->texArrayOffsets, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(3);	
 	glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(uint32_t), (void * )0);
 	glVertexAttribDivisor(3, 1);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, glRuntime.transformBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(struct mat4) * meshes, 
-		rState->transforms, GL_STATIC_DRAW);
+		commands->transforms, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(4 + 0);
 	glEnableVertexAttribArray(4 + 1);
 	glEnableVertexAttribArray(4 + 2);
@@ -581,7 +577,7 @@ extern void gl_Output(struct render_commands *commands,
 	glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 	glEnable(GL_SAMPLE_ALPHA_TO_ONE);
 	glEnable(GL_MULTISAMPLE);
-
+	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 	glEnable(GL_TEXTURE_2D);		
 	glEnable(GL_SCISSOR_TEST);
 	glEnable(GL_BLEND);
@@ -606,7 +602,7 @@ extern void gl_Output(struct render_commands *commands,
 			GLint maxSampleCount;
 			glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &maxSampleCount);
 			if(maxSampleCount > 16) {
-					maxSampleCount = 16;
+				maxSampleCount = 16;
 			}					
 #if 1						
 			GLuint slot = GL_TEXTURE_2D_MULTISAMPLE;
@@ -672,20 +668,13 @@ extern void gl_Output(struct render_commands *commands,
 	float clipScaleY = SafeRatio0((float)GetHeightI(drawRegion), (float)commands->h);
 		
 	uint32_t currentRenderTargetIndex = 0xFFFFFFFF;
-	
-	glRuntime.rState->vertexOffset = 0;
-	glRuntime.rState->elementOffset = 0;
-	glRuntime.rState->meshCount = 0;
-	glRuntime.rState->vertexCount = 0;
-	glRuntime.rState->elementCount = 0;
 	for(uint8_t *headerAt = commands->pushBase;
 		headerAt < commands->pushData; 
 		headerAt += sizeof(struct render_entry_header)) {				
 				
 		struct render_entry_header *header = (struct render_entry_header *)headerAt;	
 		struct render_setup *setup = &header->setup;
-		
-		
+				
 		if(useRenderTargets) {				
 			assert(!gl_GetError());
 			
@@ -850,8 +839,10 @@ extern void gl_Output(struct render_commands *commands,
 				glDrawArrays(GL_TRIANGLES, 0, 6 * 6);
 				break;
 				
-			} case entry_bmp: {										
-				headerAt += sizeof(struct render_entry_bmp);								
+			} case entry_bmp: {
+				TIMED_START(render_bmp);
+				
+				headerAt += sizeof(struct render_entry_bmp);		
 				struct render_entry_bmp *entry = (struct render_entry_bmp *)data;								
 				assert(entry->bmp);
 				
@@ -903,59 +894,21 @@ extern void gl_Output(struct render_commands *commands,
 					entry->zBias);				
 				
 				glDrawArrays(GL_TRIANGLES, 0, 6);
+				TIMED_END(render_bmp);
+				break;				
+			} case entry_mesh_batch: {
+				TIMED_START(render_mesh);
+				headerAt += sizeof(struct render_entry_mesh_batch);
 				
+				glRuntime.proj = setup->proj;
+				gl_MultiRenderMesh(commands);
+				TIMED_END(render_mesh);
 				break;
-				
-			} 
-			case entry_mesh: 
-			{
-				headerAt += sizeof(struct render_entry_mesh);
-				if(glRuntime.rState->meshCount == MAX_MESHCOMMAND - 1) break;
-				struct render_entry_mesh *entry = (struct render_entry_mesh *)data;
-				assert(entry->mesh);
-				assert(entry->bmp);
-
-				int32_t i = glRuntime.rState->meshCount;
-
-				glRuntime.proj = setup->proj; //do this somehwere else
-
-				assert(i < MAX_MESHCOMMAND);
-				uint32_t vertexCount = entry->mesh->vertexCount;
-				uint32_t vertexSize = vertexCount * VERTEX_STRIDE;
-				uint32_t elementCount = entry->mesh->faceCount * FACE_STRIDE;
-				assert(glRuntime.rState->vertexOffset + vertexSize < ARRAY_COUNT(glRuntime.rState->vertexData));
-				assert(glRuntime.rState->elementOffset + elementCount < ARRAY_COUNT(glRuntime.rState->elementData));
-				
-				float *vertexSrc = (float *)entry->mesh->data;
-				float *vertexDest = glRuntime.rState->vertexData + glRuntime.rState->vertexOffset;
-				memcpy(vertexDest, vertexSrc, vertexSize * _32BIT);
-
-				uint32_t *elementSrc = (uint32_t *)entry->mesh->data + vertexSize;
-				uint32_t *elementDest = glRuntime.rState->elementData + glRuntime.rState->elementOffset;
-				memcpy(elementDest, elementSrc, elementCount * _32BIT);	
-
-				struct gl_mesh_render_command *commands = &glRuntime.rState->meshCommands[i];
-				commands->vertexCount = elementCount;
-				commands->instanceCount = 1;
-				commands->firstIndex = glRuntime.rState->elementOffset;
-				commands->baseVertex = glRuntime.rState->vertexCount;
-				commands->baseInstance = i;
-
-				glRuntime.rState->elementOffset += elementCount;
-				glRuntime.rState->elementCount += elementCount;
-				glRuntime.rState->vertexOffset += vertexSize;
-				glRuntime.rState->vertexCount += vertexCount;
-
-				glRuntime.rState->transforms[i] = Transpose(entry->transform);
-				glRuntime.rState->texArrayOffsets[i] = entry->bmp->arrayOffset;
-				glRuntime.rState->meshCount++;
-				break;
-			} 
-			default: INVALID_PATH;
+			}
+			default: break;
 			}
 		}
-	}
-	if(glRuntime.rState->meshCount) {gl_MultiRenderMesh();}					
+	}			
 			
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, globalFrameBufferHandles[0]);		
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);		

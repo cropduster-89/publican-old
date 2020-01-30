@@ -49,10 +49,10 @@ extern void ui_TextOut(char *string,
 				.y = bmp->alignY,
 			};
 			
-			align = MultVec2(align, 1.0f);				
-			align = MultVec2(align, scale);		
-			size = MultVec2(size, 1.0f);		
-			size = MultVec2(size, scale);				
+			align = MULTVEC(align, 1.0f);				
+			align = MULTVEC(align, scale);		
+			size = MULTVEC(size, 1.0f);		
+			size = MULTVEC(size, scale);				
 								
 			trans.offset.x +=  align.x + prevX + prevSizeX;				
 			trans.offset.y -=  size.y + align.y;

@@ -26,7 +26,7 @@ static inline struct push_buffer_result PushBuffer(struct render_group *group,
 	return(result);
 }
 
-static inline void *render_PushEntry(struct render_group *group,
+static inline void *PushEntry(struct render_group *group,
 				     uint32_t size,
 				     enum entry_type type)
 {
@@ -77,7 +77,7 @@ static inline void render_PushLoadedBMP(struct render_group *group,
 	union vec2 size = dim.size;		
 	
 	struct render_entry_bmp *entry = 
-		render_PushEntry(group, sizeof(struct render_entry_bmp), entry_bmp);
+		PushEntry(group, sizeof(struct render_entry_bmp), entry_bmp);
 	if(entry) {			
 		entry->bmp = bmp;
 		entry->pos = dim.basis;	
@@ -239,7 +239,7 @@ static inline void render_PushLoadedSprite(struct render_group *group,
 	union vec2 size = dim.size;		
 	
 	struct render_entry_bmp *entry = 
-		render_PushEntry(group, sizeof(struct render_entry_bmp), entry_bmp);
+		PushEntry(group, sizeof(struct render_entry_bmp), entry_bmp);
 	if(entry) {			
 		entry->bmp = bmp;
 		entry->pos = dim.basis;	
@@ -305,7 +305,7 @@ static inline void render_PushRect(struct render_group *group,
 				   union vec2 dim,
 				   union vec4 colour)
 {
-	struct render_entry_rect *entry = render_PushEntry(
+	struct render_entry_rect *entry = PushEntry(
 		group, sizeof(struct render_entry_rect), entry_rect);
 		
 	assert(entry);
@@ -326,7 +326,7 @@ static inline void render_PushCube(struct render_group *group,
 				   float height,
 				   uint32_t colour)
 {	
-	struct render_entry_cube *entry = render_PushEntry(
+	struct render_entry_cube *entry = PushEntry(
 		group, sizeof(struct render_entry_cube), entry_cube);
 		
 	assert(entry);										
@@ -343,7 +343,7 @@ static inline void render_PushCube(struct render_group *group,
 static inline void render_PushMouseCoords(struct render_group *group,
 					  union vec3 pos)
 {
-	struct render_entry_mouse *entry = render_PushEntry(group, 
+	struct render_entry_mouse *entry = PushEntry(group, 
 						sizeof(struct render_entry_mouse),
 						entry_mouse);
 	assert(entry);
@@ -370,31 +370,64 @@ static struct mat4 inline render_ApplyRotation(int32_t rotation)
 	return(result);
 }
 
-static inline void render_PushMesh(struct render_group *group,
-				   struct mesh_id idMesh,
-				   struct bmp_id idBMP,
-				   union vec3 pos,	
-				   union vec3 offset,
-				   int32_t rotation)
+static void render_PushMesh(
+	struct render_group *group,
+	struct mesh_id idMesh,
+	struct bmp_id idBMP,
+	union vec3 pos,	
+	union vec3 offset,
+	int32_t rotation)
 {
+	TIMED_START(push_mesh);
 	struct loaded_mesh *mesh = assets_GetMesh(group->assets, idMesh);
 	struct loaded_bmp *bmp = assets_GetBMP(group->assets, idBMP);
 	if(mesh && bmp) {
-		struct render_entry_mesh *entry = render_PushEntry(group, 
-			sizeof(struct render_entry_mesh),
-			entry_mesh);
-		assert(entry);										
-		if(entry) {			
-			entry->mesh = mesh;
-			entry->bmp = bmp;			
-			entry->transform = Translate(render_ApplyRotation(rotation), 
-				ADDVEC(pos, offset));					
+		if(!group->meshBatch) {
+			struct render_entry_mesh_batch *entry = PushEntry(group, 
+				sizeof(struct render_entry_mesh_batch), entry_mesh_batch);				
+			assert(entry);		
+			group->meshBatch = entry;	
+		} if(group->meshBatch) {						
+			struct mat4 transform = Translate(render_ApplyRotation(rotation), ADDVEC(pos, offset));		
+			struct render_commands *commands = group->commands;
+			
+			int32_t i = group->meshBatch->meshCount = commands->meshCount++;			
+#ifdef DEBUG
+			assert(i < MAX_MESHCOMMAND);
+#endif
+#define BYTES 4
+			uint32_t vertexCount = mesh->vertexCount;
+			uint32_t vertexSize = vertexCount * VERTEX_STRIDE * BYTES;
+			uint32_t elementCount = mesh->faceCount;
+			uint32_t elementCount32 = elementCount * FACE_STRIDE;
+			uint32_t elementSize = elementCount32 * BYTES;
+#ifdef DEBUG
+			assert(vertexSize + (commands->vertexData - commands->vertexBase) < commands->maxVertexSize);
+			assert(elementSize + (commands->elementData - commands->elementBase) < commands->maxElementSize);
+#endif			
+			memcpy(commands->vertexData, mesh->data, vertexSize);
+			memcpy(commands->elementData, mesh->data + vertexSize, elementSize);
+			commands->vertexData += vertexSize;
+			commands->elementData += elementSize;
+			
+			struct gl_mesh_render_command *mCommands = commands->meshCommands + i;
+			mCommands->vertexCount = elementCount32;
+			mCommands->instanceCount = 1;
+			mCommands->firstIndex = commands->elementCount;
+			mCommands->baseVertex = commands->vertexCount;
+			mCommands->baseInstance = i;
+			
+			commands->elementCount += elementCount32;
+			commands->vertexCount += vertexCount;
+			commands->transforms[i] = Transpose(transform);
+			commands->texArrayOffsets[i] = bmp->arrayOffset;			
 		}										
 	} if(!mesh) {
 		assets_LoadMesh(group->assets, idMesh, false);				
 	} if(!bmp) {
 		assets_LoadBMP(group->assets, idBMP, false, final_skin);		
 	}
+	TIMED_END(push_mesh);
 }
 
 static inline void render_PushSetup(struct render_group *group,
@@ -426,8 +459,7 @@ extern void render_SetTransform(struct render_group *group,
 		proj = PerspProj(b, focalLength, nearClip, farClip);
 	} else {
 		proj = OrthoProj(b, focalLength, nearClip, farClip);
-	}
-			
+	}			
 	if(!debug) {
 		group->camX = camX;
 		group->camY = camY;

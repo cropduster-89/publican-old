@@ -941,18 +941,19 @@ static HWND CreateMainWindow(
 */
 static void NewRenderCommandsForFrame(
 	struct render_commands *commands,
-	POINT dim,
-	uint8_t *base,
-	size_t size)
+	POINT dim)
 {	
 #define MAX_RENDER_TARGETS 4
 	commands->w = dim.x;
 	commands->h = dim.y;
 	commands->maxRenderTargetIndex = MAX_RENDER_TARGETS;
 	commands->entryCount = 0;
-	commands->maxPushSize = size;
-	commands->pushBase = base;
-	commands->pushData = base;
+	commands->meshCount = 0;
+	commands->vertexCount = 0;
+	commands->elementCount = 0;
+	commands->pushData = commands->pushBase;
+	commands->vertexData = commands->vertexBase;
+	commands->elementData = commands->elementBase;
 }
 /*
 *	Entry point for Windows. 
@@ -1000,7 +1001,29 @@ int CALLBACK wWinMain(
 #define PUSH_BUFFER_SIZE_MB 64
 	size_t pushBufferSize = MEGABYTES(PUSH_BUFFER_SIZE_MB);	
 	struct platform_memory_block *pushBufferBlock = win32_Alloc(pushBufferSize, PLATFORM_NOTRESTORED);
-	uint8_t *pushBase = pushBufferBlock->base;
+#define MAX_MESH_COUNT 0xFFF
+	size_t meshCommandBufferSize = sizeof(struct gl_mesh_render_command) * MAX_MESH_COUNT;	
+	struct platform_memory_block *meshBlock = win32_Alloc(meshCommandBufferSize, PLATFORM_NOTRESTORED);
+	size_t texArrayOffsetsSize = sizeof(uint32_t) * MAX_MESH_COUNT;	
+	struct platform_memory_block *texArrayOffsets = win32_Alloc(texArrayOffsetsSize, PLATFORM_NOTRESTORED);
+	size_t trandformsSize = sizeof(struct mat4) * MAX_MESH_COUNT;	
+	struct platform_memory_block *transforms = win32_Alloc(trandformsSize, PLATFORM_NOTRESTORED);	
+	size_t vertexBufferSize = sizeof(uint8_t) * 0xFFFFF;	
+	struct platform_memory_block *vertexBlock = win32_Alloc(vertexBufferSize, PLATFORM_NOTRESTORED);	
+	size_t elementBufferSize = sizeof(uint8_t) * 0xFFFFF;	
+	struct platform_memory_block *elementBlock = win32_Alloc(elementBufferSize, PLATFORM_NOTRESTORED);
+	
+	struct render_commands commands = {
+		.maxPushSize = pushBufferSize,
+		.pushBase = (uint8_t *)pushBufferBlock->base,
+		.meshCommands = (struct gl_mesh_render_command *)meshBlock->base,
+		.texArrayOffsets = (uint32_t *)texArrayOffsets->base,
+		.transforms = (struct mat4 *)transforms->base,
+		.vertexBase = (uint8_t *)vertexBlock->base,
+		.maxVertexSize = vertexBufferSize,
+		.elementBase = (uint8_t *)elementBlock->base,
+		.maxElementSize = elementBufferSize,
+	};
 	
 #define MAX_TEXTURE_JOBS 1024
 	uint32_t textureOpCount = MAX_TEXTURE_JOBS;
@@ -1021,9 +1044,8 @@ int CALLBACK wWinMain(
 		LimitFps(lastCounter);
 		lastCounter = win32_GetWallClock();
 	
-		POINT dim = win32_GetWindowDim(window);
-		struct render_commands commands = {};
-		NewRenderCommandsForFrame(&commands, dim, pushBase, pushBufferSize);											
+		POINT dim = win32_GetWindowDim(window);		
+		NewRenderCommandsForFrame(&commands, dim);											
 		
 		UpdateCursor(window, dim, input);		
 		ProcessMessage(input);			

@@ -644,10 +644,8 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 			world->selectedEnt = world->mouseOverEnt;
 			ui_OpenCharPanel(world);				
 		}
-		else if(world->edit.editorOpen && world->edit.current.ent != NULL) 
-		{
-			if(world->edit.current.ent->alias == ENTALIAS_WALL) 
-			{
+		else if(world->edit.editorOpen && world->edit.current.ent != NULL) {
+			if(world->edit.current.ent->alias == ENTALIAS_WALL) {
 				world->edit.wallsInit = false;
 				edit_WallPlace(world);
 				world->edit.newAnchor = 0;
@@ -660,9 +658,7 @@ extern void world_UpdateAndRender(struct game_state 	*state,
 				world->edit.elevLock = 0;						
 				union vec3 dummyPos = {};
 				world->edit.basePos = dummyPos;					
-			} 
-			else 
-			{
+			} else {
 				edit_PlaceItem(world);				
 			}			
 		} 	

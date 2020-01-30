@@ -54,29 +54,6 @@ struct button_control {
 	struct button_state f1;
 };
 
-struct render_commands {
-	int32_t w;
-	int32_t h;
-	
-	uint32_t maxPushSize;
-	uint32_t entryCount;
-	uint8_t *pushBase;		
-	uint8_t *pushData;		
-	
-	uint32_t lastUsedSortKey;
-	uint32_t clipRectCount;
-	uint32_t maxRenderTargetIndex;
-	
-	struct render_entry_cliprect *firstRect;
-	struct render_entry_cliprect *lastRect;
-};	
-
-struct render_prep {
-	struct render_entry_cliprect *clipRects;
-	uint32_t sortedIndexCount;
-	uint32_t sortedIndices;
-};
-
 struct pub_input {
 	int32_t mouseX, mouseY, mouseZ;
 	struct button_control buttons;
